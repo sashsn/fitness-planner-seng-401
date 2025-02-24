@@ -26,16 +26,14 @@ The AI-Powered Personalized Fitness Planner is a MERN-based web application that
 │── controllers/      # Handles API requests (Auth, Profile, Plans, Notifications)
 │── services/         # Business logic (User, Plan, Notifications, AI Integration)
 │── models/           # MongoDB Schemas (User, FitnessPreferences, Plans, Logs)
-│── domain/           # Strategy Pattern for Meal Plans
+│── domain/           # Strategy Pattern for Meal Planshttps://github.com/sashsn/fitness-planner-seng-401/blob/main/README.md
 │── patterns/         # Factory, Observer, Singleton Design Patterns
 │── utils/            # AI Processing & LLM Requests
 │── index.js          # Entry point
 │── package.json      # Dependencies & scripts
 ```
 
-## Function Descriptions for GitHub Copilot
-
-This section provides detailed descriptions of each function to help GitHub Copilot generate accurate code suggestions.
+## Function Descriptions
 
 ### `src/controllers/AuthController.js`
 
