@@ -191,7 +191,7 @@ Ensures a single MongoDB connection instance is used.
 
 1. Clone the repository
    ```sh
-   git clone https://github.com/YOUR_GITHUB_USERNAME/fitness-planner.git
+   git clone https://github.com/sashsn/fitness-planner-seng401.git
    cd fitness-planner
    ```
 2. Install dependencies
