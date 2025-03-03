@@ -209,13 +209,4 @@ Ensures a single MongoDB connection instance is used.
    npm start
    ```
 
-## Future Enhancements
-
-- React.js Frontend for user interaction
-- Graph-based AI Recommendations for better workouts
-- Mobile App (React Native) for easy access
-
-## License
-
-MIT License – Free to use and modify
 
