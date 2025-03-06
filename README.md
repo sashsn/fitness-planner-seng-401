@@ -1,22 +1,99 @@
-# AI-Powered Personalized Fitness Planner
+# Fitness Planner Application
 
-## Project Overview
+A comprehensive web application for tracking workouts, nutrition, and fitness goals.
 
-The AI-Powered Personalized Fitness Planner is a MERN-based web application that generates customized workout and meal plans based on user preferences, leveraging LLM (Large Language Model) technology. Users can:
+## Features
 
-- Register and authenticate securely using JWT.
-- Receive AI-generated workout and meal plans based on fitness goals.
-- Log workouts and track progress dynamically.
-- Receive notifications (Email, SMS, Push) for reminders.
-- Use a responsive UI (React.js) and interact with an AI-powered backend (Node.js, Express, MongoDB, OpenAI API).
+- User authentication and profile management
+- Create and track workout routines
+- Log exercises with sets, reps, weights
+- Track nutrition and meals
+- Set and monitor fitness goals
+- Dashboard with progress visualization
 
-## Tech Stack
+## Project Structure
 
-- **Frontend:** React.js (Next.js), Tailwind CSS
-- **Backend:** Node.js, Express.js
-- **Database:** MongoDB (Atlas)
-- **AI Integration:** OpenAI API (LLM)
-- **Authentication:** JWT-based authentication
-- **Deployment:** Vercel (Frontend), Render (Backend)
+This project is organized as a monorepo containing both backend and frontend:
+
+```
+fitness-planner-seng-401/
+├── backend/         # Express.js API
+└── frontend/        # React application
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v14+ recommended)
+- npm or yarn
+- PostgreSQL (v12+ recommended)
+
+### Backend Setup
+
+1. Navigate to the root directory:
+   ```bash
+   cd fitness-planner-seng-401
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   Create a `.env` file in the project root with the necessary configuration (see `.env.example`).
+
+4. Set up the database:
+   ```bash
+   npm run db:setup
+   ```
+
+5. Start the backend server:
+   ```bash
+   npm run dev
+   ```
+
+### Frontend Setup
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm start
+   ```
+
+## Development Workflow
+
+- Backend API documentation is available in the `API.md` file
+- Frontend development guide is in the `frontend/README.md` file
+
+## Technologies Used
+
+### Backend
+- Express.js
+- PostgreSQL with Sequelize ORM
+- JWT Authentication
+- RESTful API architecture
+
+### Frontend
+- React with TypeScript
+- Redux Toolkit for state management
+- Material-UI component library
+- Formik and Yup for form management
+- Chart.js for data visualization
+
+## License
+
+[MIT](LICENSE)
+
 
 
