@@ -3,8 +3,7 @@
  * Business logic for user-related operations
  */
 const { User } = require('../models');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+          const jwt = require('jsonwebtoken');
 const { ApiError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
@@ -13,7 +12,7 @@ const logger = require('../utils/logger');
  * @param {Object} userData - User registration data
  * @returns {Object} User object and JWT token
  */
-exports.createUser = async (userData) => {
+const createUser = async (userData) => {
   try {
     // Check if user with email already exists
     const existingUserByEmail = await User.findOne({ where: { email: userData.email } });
@@ -27,13 +26,8 @@ exports.createUser = async (userData) => {
       throw new ApiError(409, 'Username already taken');
     }
     
-    // Hash password before creating user
-    if (userData.password) {
-      const salt = await bcrypt.genSalt(10);
-      userData.password = await bcrypt.hash(userData.password, salt);
-    }
-    
-    // Create user
+    // No password hashing - store password directly
+    // Create user with plain text password
     const user = await User.create(userData);
     
     // Generate JWT token
@@ -69,18 +63,16 @@ exports.createUser = async (userData) => {
  * @param {string} password - User password
  * @returns {Object} User object and JWT token
  */
-exports.loginUser = async (email, password) => {
+const loginUser = async (email, password) => {
   try {
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      // Fix: Use numeric status code as first parameter
       throw new ApiError(401, 'Invalid credentials');
     }
     
     // Use bcrypt to compare passwords
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await user.matchPassword(password);
     if (!isPasswordValid) {
-      // Fix: Use numeric status code as first parameter
       throw new ApiError(401, 'Invalid credentials');
     }
     
@@ -116,7 +108,7 @@ exports.loginUser = async (email, password) => {
  * @param {string} userId - User ID
  * @returns {Object} User object
  */
-exports.getUserById = async (userId) => {
+const getUserById = async (userId) => {
   try {
     const user = await User.findByPk(userId);
     if (!user) {
@@ -147,18 +139,14 @@ exports.getUserById = async (userId) => {
  * @param {Object} userData - Updated user data
  * @returns {Object} Updated user object
  */
-exports.updateUser = async (userId, userData) => {
+const updateUser = async (userId, userData) => {
   try {
     const user = await User.findByPk(userId);
     if (!user) {
       throw new ApiError(404, 'User not found');
     }
     
-    // Hash password if it's being updated
-    if (userData.password) {
-      const salt = await bcrypt.genSalt(10);
-      userData.password = await bcrypt.hash(userData.password, salt);
-    }
+    // No password hashing - store password directly if it's being updated
     
     await user.update(userData);
     
@@ -184,7 +172,7 @@ exports.updateUser = async (userId, userData) => {
  * @param {string} userId - User ID
  * @returns {boolean} Success status
  */
-exports.deleteUser = async (userId) => {
+const deleteUser = async (userId) => {
   try {
     const user = await User.findByPk(userId);
     if (!user) {
@@ -205,14 +193,15 @@ exports.deleteUser = async (userId) => {
  * @param {string} password - User password
  * @returns {boolean} Authentication result
  */
-exports.verifyCredentials = async (email, password) => {
+const verifyCredentials = async (email, password) => {
   try {
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return false;
     }
     
-    return bcrypt.compare(password, user.password);
+    // Direct comparison without bcrypt
+    return password === user.password;
   } catch (error) {
     logger.error('Error verifying credentials:', error);
     return false;
@@ -245,18 +234,14 @@ const getUserByUsername = async (username) => {
   return await User.findOne({ where: { username } });
 };
 
-const createUser = async (userData) => {
-  return await User.create(userData);
-};
-
-// Fix the module exports to include all required functions
+// Use CommonJS module exports - consolidate all exports in one object
 module.exports = {
-  createUser: exports.createUser,
-  loginUser: exports.loginUser,
-  getUserById: exports.getUserById,
-  updateUser: exports.updateUser,
-  deleteUser: exports.deleteUser,
-  verifyCredentials: exports.verifyCredentials,
+  createUser,
+  loginUser,
+  getUserById,
+  updateUser,
+  deleteUser,
+  verifyCredentials,
   getUserByEmail,
   getUserByUsername
 };

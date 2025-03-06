@@ -1,4 +1,5 @@
-const userService = require('../services/userService');
+const userService = require('../services/UserService');
+const User = require('../models').User;
 const { ApiError, logApiError } = require('../utils/errors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -21,41 +22,40 @@ const register = async (req, res, next) => {
     logger.debug(`Registration attempt for email: ${email}, username: ${username}`);
     
     // Validate input
-    if (!username || !email || !password || !firstName || !lastName) {
+    if (!username || !email || !password) {
       logger.warn('Registration missing required fields');
-      return next(new ApiError('All fields are required', 400));
+      return res.status(400).json({
+        success: false,
+        message: 'Username, email, and password are required'
+      });
     }
 
-    // Check if user already exists
-    const existingUser = await userService.getUserByEmail(email);
-    if (existingUser) {
-      logger.warn(`Registration failed: email ${email} already exists`);
-      return next(new ApiError('Email already registered', 400));
-    }
-
-    const existingUsername = await userService.getUserByUsername(username);
-    if (existingUsername) {
-      logger.warn(`Registration failed: username ${username} already exists`);
-      return next(new ApiError('Username already taken', 400));
-    }
-
-    // Create user with detailed error handling
     try {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const user = await userService.createUser({
+      // Check if user already exists
+      const existingUser = await userService.getUserByEmail(email);
+      if (existingUser) {
+        logger.warn(`Registration failed: email ${email} already exists`);
+        return res.status(400).json({
+          success: false,
+          message: 'Email already registered'
+        });
+      }
+
+      // Create user without password hashing
+      const user = await User.create({
         username,
-        email, 
-        password: hashedPassword,
-        firstName,
-        lastName,
-        dateOfBirth,
+        email,
+        password,
+        firstName: firstName || '',
+        lastName: lastName || '',
+        dateOfBirth: dateOfBirth || null,
         role: 'user'
       });
 
-      // Generate token for automatic login after registration
+      // Generate token
       const token = generateToken(user.id);
       
-      // Set token in cookie for better security
+      // Set token in cookie
       res.cookie('token', token, {
         httpOnly: true,
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
@@ -76,21 +76,19 @@ const register = async (req, res, next) => {
         },
         token
       });
-    } catch (dbError) {
-      // Log detailed validation errors
-      if (dbError.name === 'SequelizeValidationError') {
-        const validationErrors = dbError.errors.map(err => ({
-          field: err.path,
-          message: err.message
-        }));
-        logger.error(`Validation errors: ${JSON.stringify(validationErrors)}`);
-        return next(new ApiError(`Validation error: ${validationErrors[0].message}`, 400));
-      }
-      throw dbError;
+    } catch (error) {
+      logger.error(`Error during registration: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Registration failed'
+      });
     }
   } catch (error) {
     logger.error(`Registration error: ${error.message}`);
-    return next(new ApiError('Server error during registration', 500));
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during registration'
+    });
   }
 };
 
@@ -112,6 +110,7 @@ const login = async (req, res, next) => {
 
     // First try to find the user
     const user = await userService.getUserByEmail(email);
+    
     if (!user) {
       logger.warn(`Login failed: No user found with email ${email}`);
       return res.status(401).json({
@@ -122,55 +121,54 @@ const login = async (req, res, next) => {
 
     // Log found user details (without password)
     logger.debug(`User found: ${user.username}, ID: ${user.id}`);
-
-    // Check password with extra logging
-    try {
-      const passwordMatch = await bcrypt.compare(password, user.password);
-      
-      if (!passwordMatch) {
-        logger.warn(`Login failed: Invalid password for user ${email}`);
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid email or password'
-        });
-      }
-      
-      logger.debug(`Password matched successfully for user ${email}`);
-      
-      // Generate token
-      const token = generateToken(user.id);
-      
-      // Set token in cookie
-      res.cookie('token', token, {
-        httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax'
-      });
-      
-      logger.info(`User ${email} logged in successfully`);
-      
-      // Return successful response with token and user data
-      return res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        token,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role
-        }
-      });
-    } catch (error) {
-      logger.error(`Password comparison error: ${error.message}`);
+    
+    // Make sure we have the password field
+    if (!user.password) {
+      logger.error(`User ${email} found but has no password field`);
       return res.status(500).json({
         success: false,
-        message: 'Error verifying password'
+        message: 'Error with user account'
       });
     }
+
+    // Check password using bcrypt compare
+    if (!(await user.matchPassword(password))) {
+      logger.warn(`Login failed: Invalid password for user ${email}`);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+    
+    logger.debug(`Password matched successfully for user ${email}`);
+    
+    // Generate token
+    const token = generateToken(user.id);
+    
+    // Set token in cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax'
+    });
+    
+    logger.info(`User ${email} logged in successfully`);
+    
+    // Return successful response with token and user data
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      }
+    });
   } catch (error) {
     logger.error(`Login error: ${error.message}`);
     return res.status(500).json({
