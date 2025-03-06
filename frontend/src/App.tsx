@@ -1,6 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAppSelector } from './hooks/reduxHooks';
+import GenerateWorkout from './pages/workouts/GenerateWorkout';
+import ProtectedRoute from './routes/ProtectedRoute';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
@@ -25,21 +27,7 @@ import Goals from './pages/goals/Goals';
 import CreateGoal from './pages/goals/CreateGoal';
 import EditGoal from './pages/goals/EditGoal';
 
-// Protected Route component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, checkingAuth } = useAppSelector((state) => state.auth);
-
-  // If still checking auth, return nothing yet
-  if (checkingAuth) return null;
-
-  // If not authenticated, redirect to login
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-};
-
+// Simplify the App component for testing
 const App: React.FC = () => {
   return (
     <Routes>
@@ -61,6 +49,7 @@ const App: React.FC = () => {
         <Route path="workouts/create" element={<CreateWorkout />} />
         <Route path="workouts/:id" element={<WorkoutDetail />} />
         <Route path="workouts/:id/edit" element={<EditWorkout />} />
+        <Route path="workouts/generate" element={<GenerateWorkout />} />
         <Route path="nutrition" element={<Nutrition />} />
         <Route path="nutrition/create" element={<CreateMeal />} />
         <Route path="nutrition/:id/edit" element={<EditMeal />} />

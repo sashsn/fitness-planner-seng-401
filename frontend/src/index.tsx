@@ -13,6 +13,9 @@ import theme from './theme';
 import reportWebVitals from './reportWebVitals';
 import AuthLoader from './components/auth/AuthLoader';
 
+// Import our axios config to apply it globally
+import './app/axios';
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );

@@ -18,6 +18,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import AddIcon from '@mui/icons-material/Add';
+import { Link as RouterLink } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../hooks/reduxHooks';
 import { fetchWorkouts } from '../features/workouts/workoutSlice';
 import { fetchMeals } from '../features/nutrition/nutritionSlice';
@@ -192,6 +193,30 @@ const Dashboard: React.FC = () => {
               ) : (
                 <Typography>No goals set yet</Typography>
               )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Workout Generator */}
+        <Grid item xs={12} md={6} lg={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" mb={2}>
+                <FitnessCenterIcon fontSize="large" color="primary" />
+                <Typography variant="h6" ml={1}>Workout Generator</Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Create a personalized workout plan based on your preferences and fitness goals.
+              </Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                component={RouterLink}
+                to="/workouts/generate"
+                fullWidth
+              >
+                Create Workout Plan
+              </Button>
             </CardContent>
           </Card>
         </Grid>
