@@ -15,124 +15,82 @@ const generateToken = (id) => {
 // Register a new user
 const register = async (req, res, next) => {
   try {
-    console.log('Register endpoint hit with body:', {
-      ...req.body,
-      password: req.body.password ? '[PRESENT]' : '[MISSING]'
-    });
+    const { username, email, password, firstName, lastName, dateOfBirth } = req.body;
     
-    // Extract fields from request body
-    // Handle both formats: username/firstName/lastName or name
-    const name = req.body.name || 
-                 (req.body.firstName && req.body.lastName ? 
-                  `${req.body.firstName} ${req.body.lastName}` : 
-                  req.body.username);
+    // Log registration attempt (without sensitive info)
+    logger.debug(`Registration attempt for email: ${email}, username: ${username}`);
     
-    const { email, password } = req.body;
-    
-    // More relaxed validation for testing
-    const missingFields = [];
-    if (!email) missingFields.push('email');
-    // if (!name) missingFields.push('name/username/firstName+lastName'); // Commented out for easier testing
-    // if (!password) missingFields.push('password'); // Commented out for easier testing
-    
-    if (missingFields.length > 0) {
-      const errorMessage = `Please provide all required fields. Missing: ${missingFields.join(', ')}`;
-      console.error('Validation error:', errorMessage);
-      return next(new ApiError(errorMessage, 400));
+    // Validate input
+    if (!username || !email || !password || !firstName || !lastName) {
+      logger.warn('Registration missing required fields');
+      return next(new ApiError('All fields are required', 400));
     }
-    
+
+    // Check if user already exists
+    const existingUser = await userService.getUserByEmail(email);
+    if (existingUser) {
+      logger.warn(`Registration failed: email ${email} already exists`);
+      return next(new ApiError('Email already registered', 400));
+    }
+
+    const existingUsername = await userService.getUserByUsername(username);
+    if (existingUsername) {
+      logger.warn(`Registration failed: username ${username} already exists`);
+      return next(new ApiError('Username already taken', 400));
+    }
+
+    // Create user with detailed error handling
     try {
-      // Fallback implementation if userService is unavailable
-      if (!userService.getUserByEmail) {
-        logger.warn("userService.getUserByEmail not available, using fallback implementation");
-        // Direct implementation for checking if user exists
-        const existingUser = await db.User.findOne({ where: { email } });
-        if (existingUser) {
-          return next(new ApiError('User with this email already exists', 409));
-        }
-        
-        // Create user directly with fields that match our model
-        const user = await db.User.create({
-          username: req.body.username || name,
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
-          email,
-          password, // Password will be hashed by model hooks
-          dateOfBirth: req.body.dateOfBirth
-        });
-        
-        // Generate token
-        const token = generateToken(user.id);
-        
-        // Set token in cookie for better security
-        res.cookie('token', token, {
-          httpOnly: true,
-          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-          secure: process.env.NODE_ENV === 'production'
-        });
-        
-        // Return user data and token with properly formatted response
-        return res.status(201).json({
-          success: true,
-          data: {
-            id: user.id,
-            username: user.username,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            token
-          }
-        });
-      }
-      
-      // Check if user already exists using userService
-      const userExists = await userService.getUserByEmail(email);
-      
-      if (userExists) {
-        return next(new ApiError('User with this email already exists', 409));
-      }
-      
-      // Create the user with the normalized data
+      const hashedPassword = await bcrypt.hash(password, 10);
       const user = await userService.createUser({
-        name,
-        email,
-        password,
-        // Store additional fields if needed
-        dateOfBirth: req.body.dateOfBirth
+        username,
+        email, 
+        password: hashedPassword,
+        firstName,
+        lastName,
+        dateOfBirth,
+        role: 'user'
       });
-      
-      if (!user) {
-        return next(new ApiError('Failed to register user', 500));
-      }
-      
-      // Generate token
-      const token = generateToken(user.id || user._id);
+
+      // Generate token for automatic login after registration
+      const token = generateToken(user.id);
       
       // Set token in cookie for better security
       res.cookie('token', token, {
         httpOnly: true,
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-        secure: process.env.NODE_ENV === 'production'
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax'
       });
-      
-      // Return user data and token
-      return res.status(201).json({
+
+      logger.info(`User registered successfully: ${email}`);
+      return res.status(201).json({ 
         success: true,
-        data: {
-          id: user.id || user._id,
-          name: user.name,
+        message: 'User registered successfully',
+        user: {
+          id: user.id,
+          username: user.username,
           email: user.email,
-          token
-        }
+          firstName: user.firstName,
+          lastName: user.lastName
+        },
+        token
       });
-    } catch (error) {
-      logger.error(`User operations error: ${error.message}`);
-      return next(new ApiError(`Error processing registration: ${error.message}`, 500));
+    } catch (dbError) {
+      // Log detailed validation errors
+      if (dbError.name === 'SequelizeValidationError') {
+        const validationErrors = dbError.errors.map(err => ({
+          field: err.path,
+          message: err.message
+        }));
+        logger.error(`Validation errors: ${JSON.stringify(validationErrors)}`);
+        return next(new ApiError(`Validation error: ${validationErrors[0].message}`, 400));
+      }
+      throw dbError;
     }
   } catch (error) {
-    console.error('Registration error:', error);
-    logApiError(error, req);
-    next(new ApiError('Server error during registration', 500));
+    logger.error(`Registration error: ${error.message}`);
+    return next(new ApiError('Server error during registration', 500));
   }
 };
 
@@ -141,101 +99,84 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     
-    if (!email) {
-      return next(new ApiError('Please provide email', 400));
-    }
+    // Log the attempt (without sensitive info)
+    logger.debug(`Login attempt for email: ${email}`);
     
-    // More relaxed password validation for testing
-    if (!password && process.env.NODE_ENV !== 'development') {
-      return next(new ApiError('Please provide password', 400));
+    if (!email || !password) {
+      logger.warn('Login attempt missing email or password');
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
     }
-    
+
+    // First try to find the user
+    const user = await userService.getUserByEmail(email);
+    if (!user) {
+      logger.warn(`Login failed: No user found with email ${email}`);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Log found user details (without password)
+    logger.debug(`User found: ${user.username}, ID: ${user.id}`);
+
+    // Check password with extra logging
     try {
-      // Direct database access if userService is unavailable
-      if (!userService.getUserByEmail) {
-        logger.warn("userService.getUserByEmail not available, using fallback implementation");
-        
-        // Get user by email directly
-        const user = await db.User.findOne({ 
-          where: { email },
-          attributes: { include: ['password'] } // Make sure password is included
-        });
-        
-        if (!user) {
-          return next(new ApiError('Invalid credentials', 401));
-        }
-        
-        // Check password
-        const isPasswordMatch = await bcrypt.compare(password, user.password);
-        
-        if (!isPasswordMatch && process.env.NODE_ENV !== 'development') {
-          return next(new ApiError('Invalid credentials', 401));
-        }
-        
-        // Generate token
-        const token = generateToken(user.id);
-        
-        // Set token in cookie
-        res.cookie('token', token, {
-          httpOnly: true,
-          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-          secure: process.env.NODE_ENV === 'production'
-        });
-        
-        // Return user data and token
-        return res.json({
-          success: true,
-          data: {
-            id: user.id,
-            username: user.username,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            token
-          }
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      
+      if (!passwordMatch) {
+        logger.warn(`Login failed: Invalid password for user ${email}`);
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password'
         });
       }
       
-      // Use userService if available
-      const user = await userService.getUserByEmail(email);
-      
-      if (!user) {
-        return next(new ApiError('Invalid credentials', 401));
-      }
-      
-      // Check password
-      const isPasswordMatch = await userService.verifyPassword(user, password);
-      
-      if (!isPasswordMatch) {
-        return next(new ApiError('Invalid credentials', 401));
-      }
+      logger.debug(`Password matched successfully for user ${email}`);
       
       // Generate token
-      const token = generateToken(user.id || user._id);
+      const token = generateToken(user.id);
       
       // Set token in cookie
       res.cookie('token', token, {
         httpOnly: true,
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-        secure: process.env.NODE_ENV === 'production'
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax'
       });
       
-      return res.json({
+      logger.info(`User ${email} logged in successfully`);
+      
+      // Return successful response with token and user data
+      return res.status(200).json({
         success: true,
-        data: {
-          id: user.id || user._id,
-          name: user.name,
+        message: 'Login successful',
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
           email: user.email,
-          token
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role
         }
       });
     } catch (error) {
-      logger.error(`Login error: ${error.message}`);
-      return next(new ApiError(`Login failed: ${error.message}`, 500));
+      logger.error(`Password comparison error: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Error verifying password'
+      });
     }
   } catch (error) {
-    logApiError(error, req);
-    next(new ApiError('Server error during login', 500));
+    logger.error(`Login error: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during login'
+    });
   }
 };
 

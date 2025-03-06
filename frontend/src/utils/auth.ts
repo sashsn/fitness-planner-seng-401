@@ -33,6 +33,7 @@ export const removeToken = (): void => {
  */
 export const clearTokens = (): void => {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('user');
 };
 
 /**
@@ -44,6 +45,5 @@ export const isTokenValid = (): boolean => {
   if (!token) return false;
   
   // Very basic validation by checking if token is a non-empty string
-  // In production, you might want to check token expiration by decoding it
   return token.length > 0;
 };

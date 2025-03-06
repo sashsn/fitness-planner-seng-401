@@ -26,9 +26,9 @@ export const registerSchema = Yup.object({
     .required('Password is required'),
   firstName: Yup.string().nullable(),
   lastName: Yup.string().nullable(),
-  dateOfBirth: Yup.date().nullable().max(new Date(), 'Date of birth cannot be in the future'),
-  height: Yup.number().positive('Height must be positive').nullable(),
-  weight: Yup.number().positive('Weight must be positive').nullable(),
+  dateOfBirth: Yup.date().nullable().max(new Date(), "Date of birth cannot be in the future"),
+  height: Yup.number().positive('Height must be positive').typeError('Height must be a number').nullable(),
+  weight: Yup.number().positive('Weight must be positive').typeError('Weight must be a number').nullable(),
 });
 
 // Profile update form validation schema

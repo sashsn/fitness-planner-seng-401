@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import authService from './authService';
+import authService from '../../services/authService';
+import { LoginCredentials, RegisterData } from '../../services/authService';
 
 // Define RootState type since it can't find the module
 type RootState = {
@@ -11,8 +12,11 @@ interface User {
   id: string;
   username: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  height?: number;
+  weight?: number;
   role: string;
 }
 
@@ -40,12 +44,11 @@ const initialState: AuthState = {
 // Register user
 export const register = createAsyncThunk(
   'auth/register',
-  async (userData: any, thunkAPI) => {
+  async (userData: RegisterData, thunkAPI) => {
     try {
       return await authService.register(userData);
     } catch (error: any) {
-      const message = error.response?.data?.message || error.message || error.toString();
-      return thunkAPI.rejectWithValue(message);
+      return thunkAPI.rejectWithValue(error);
     }
   }
 );
@@ -53,12 +56,11 @@ export const register = createAsyncThunk(
 // Login user
 export const login = createAsyncThunk(
   'auth/login',
-  async (userData: { email: string; password: string }, thunkAPI) => {
+  async (credentials: LoginCredentials, thunkAPI) => {
     try {
-      return await authService.login(userData);
+      return await authService.login(credentials);
     } catch (error: any) {
-      const message = error.response?.data?.message || error.message || error.toString();
-      return thunkAPI.rejectWithValue(message);
+      return thunkAPI.rejectWithValue(error);
     }
   }
 );
@@ -70,8 +72,7 @@ export const checkAuth = createAsyncThunk(
     try {
       return await authService.checkAuth();
     } catch (error: any) {
-      const message = error.response?.data?.message || error.message || error.toString();
-      return thunkAPI.rejectWithValue(message);
+      return thunkAPI.rejectWithValue(error);
     }
   }
 );
@@ -141,11 +142,10 @@ export const authSlice = createSlice({
       state.isAuthenticated = !!action.payload;
       state.checkingAuth = false;
     });
-    builder.addCase(checkAuth.rejected, (state, action: PayloadAction<any>) => {
+    builder.addCase(checkAuth.rejected, (state) => {
       state.isAuthenticated = false;
       state.user = null;
       state.checkingAuth = false;
-      state.error = action.payload as string;
     });
 
     // Logout cases

@@ -91,9 +91,6 @@ fitness-planner-seng-401/
 - Formik and Yup for form management
 - Chart.js for data visualization
 
-## License
-
-[MIT](LICENSE)
 
 
 

@@ -73,12 +73,14 @@ exports.loginUser = async (email, password) => {
   try {
     const user = await User.findOne({ where: { email } });
     if (!user) {
+      // Fix: Use numeric status code as first parameter
       throw new ApiError(401, 'Invalid credentials');
     }
     
     // Use bcrypt to compare passwords
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      // Fix: Use numeric status code as first parameter
       throw new ApiError(401, 'Invalid credentials');
     }
     
@@ -215,4 +217,46 @@ exports.verifyCredentials = async (email, password) => {
     logger.error('Error verifying credentials:', error);
     return false;
   }
+};
+
+const getUserByEmail = async (email) => {
+  try {
+    logger.debug(`Searching for user with email: ${email}`);
+    
+    const user = await User.findOne({
+      where: { email },
+      attributes: { include: ['password'] } // Explicitly include password
+    });
+    
+    if (user) {
+      logger.debug(`Found user with email ${email}: ID=${user.id}, username=${user.username}`);
+    } else {
+      logger.debug(`No user found with email: ${email}`);
+    }
+    
+    return user;
+  } catch (error) {
+    logger.error(`Error finding user by email ${email}: ${error.message}`);
+    throw error;
+  }
+};
+
+const getUserByUsername = async (username) => {
+  return await User.findOne({ where: { username } });
+};
+
+const createUser = async (userData) => {
+  return await User.create(userData);
+};
+
+// Fix the module exports to include all required functions
+module.exports = {
+  createUser: exports.createUser,
+  loginUser: exports.loginUser,
+  getUserById: exports.getUserById,
+  updateUser: exports.updateUser,
+  deleteUser: exports.deleteUser,
+  verifyCredentials: exports.verifyCredentials,
+  getUserByEmail,
+  getUserByUsername
 };

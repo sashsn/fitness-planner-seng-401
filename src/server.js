@@ -1,18 +1,20 @@
+/**
+ * Server entry point
+ * This file starts the Express server
+ */
 require('dotenv').config();
 const express = require('express');
-const path = require('path'); 
-const cookieParser = require('cookie-parser'); 
+const path = require('path');
+const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const cors = require('cors');
 const logger = require('./utils/logger');
-const config = require('./config/env');
-const errorHandler = require('./middleware/errorHandler');
-const { notFound } = require('./middleware/notFound');
 const { connectDB } = require('./config/database');
-const routes = require('./routes');
+
+// Create Express app
+const app = express();
 
 // Force port to be 5000 to match frontend expectations
-const app = express();
 const PORT = 5000;
 
 console.log(`Server starting on port ${PORT}...`);
@@ -57,6 +59,9 @@ app.use(session({
   }
 }));
 
+// Import routes
+const routes = require('./routes');
+
 // API routes
 app.use('/api', routes);
 
@@ -77,29 +82,36 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Error handling middleware
+const { notFound, errorHandler } = require('./middleware/errorHandler');
 app.use(notFound);
 app.use(errorHandler);
 
-// Start the server if this file is run directly
-if (require.main === module) {
-  // Load database models
-  const db = require('./models');
-  
-  // Connect to PostgreSQL database
-  db.sequelize.authenticate()
-    .then(() => {
-      logger.info('PostgreSQL database connected');
-      return db.sequelize.sync({ force: false });
-    })
-    .then(() => {
-      app.listen(PORT, () => {
-        logger.info(`Server started on port ${PORT}`);
-      });
-    })
-    .catch(err => {
-      logger.error(`Failed to start server: ${err.message}`);
+// Import seedDB in development mode
+const { seedUsers } = process.env.NODE_ENV !== 'production' ? require('./utils/seedDB') : { seedUsers: () => {} };
+
+// Start the server with database connection
+const startServer = async () => {
+  try {
+    await connectDB();
+    
+    // Seed the database with test data in development
+    if (process.env.NODE_ENV !== 'production') {
+      await seedUsers();
+    }
+    
+    app.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`);
+      console.log(`Server is running on port ${PORT}`);
     });
-}
+  } catch (error) {
+    logger.error(`Failed to start server: ${error.message}`);
+    console.error(`Failed to start server: ${error.message}`);
+    process.exit(1);
+  }
+};
+
+// Start the server
+startServer();
 
 module.exports = app;
 

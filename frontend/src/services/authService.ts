@@ -1,6 +1,5 @@
-import api from './api';
-import { setToken, removeToken, getToken } from '../utils/auth';
-import { formatISO } from 'date-fns';
+import axios from 'axios';
+import { setToken, removeToken } from '../utils/auth';
 
 export interface LoginCredentials {
   email: string;
@@ -13,9 +12,9 @@ export interface RegisterData {
   password: string;
   firstName?: string;
   lastName?: string;
-  dateOfBirth?: string | Date | null;
-  height?: number;
-  weight?: number;
+  dateOfBirth?: Date | null;
+  height?: number | string;
+  weight?: number | string;
 }
 
 export interface AuthResponse {
@@ -33,86 +32,112 @@ export interface AuthResponse {
   token: string;
 }
 
-/**
- * Login user with email and password
- * @param credentials User credentials
- * @returns Promise with user data and token
- */
-export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-  try {
-    const response = await api.post<AuthResponse>('/users/login', credentials);
-    setToken(response.data.token);
-    return response.data;
-  } catch (error) {
-    console.error('Login error:', error);
-    throw error;
-  }
-};
+// Create a consistent API instance
+const api = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true
+});
 
 /**
  * Register a new user
- * @param userData User registration data
- * @returns Promise with user data and token
  */
-export const register = async (userData: RegisterData): Promise<AuthResponse> => {
+const register = async (userData: RegisterData): Promise<AuthResponse> => {
   try {
-    // Validate required fields on the client side
-    if (!userData.username) {
-      throw new Error('Username is required');
-    }
+    console.log('Sending registration data:', { ...userData, password: '[REDACTED]' });
     
-    if (!userData.email) {
-      throw new Error('Email is required');
-    }
-    
-    if (!userData.password) {
-      throw new Error('Password is required');
-    }
-    
-    // Log the data being sent (exclude password for security)
-    console.log('Sending registration data:', { 
-      ...userData, 
-      password: '[REDACTED]',
-      hasUsername: !!userData.username
-    });
-    
-    // Format date if it's a Date object
+    // Format the data for the API
     const formattedData = {
       ...userData,
-      dateOfBirth: userData.dateOfBirth instanceof Date 
-        ? formatISO(userData.dateOfBirth) 
-        : userData.dateOfBirth
+      height: userData.height ? Number(userData.height) : undefined,
+      weight: userData.weight ? Number(userData.weight) : undefined,
     };
     
-    const response = await api.post<AuthResponse>('/users/register', formattedData);
-    setToken(response.data.token);
-    return response.data;
-  } catch (error) {
+    const response = await api.post('/users/register', formattedData);
+    
+    // Handle different response formats
+    const responseData = response.data.data || response.data;
+    
+    if (responseData.token) {
+      setToken(responseData.token);
+      localStorage.setItem('user', JSON.stringify(responseData.user));
+    }
+    
+    return responseData;
+  } catch (error: any) {
     console.error('Registration error:', error);
-    throw error;
+    
+    // Improved error message extraction
+    let errorMessage = 'Registration failed. Please try again.';
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    throw errorMessage;
   }
 };
 
 /**
- * Get current user profile
- * @returns Promise with user data or null if not authenticated
+ * Login user with email and password
  */
-export const getCurrentUser = async () => {
-  // First check if we even have a token
-  const token = getToken();
-  if (!token) {
-    // If no token, don't make an API call
-    console.log('No token available, skipping profile fetch');
-    return null;
-  }
-  
+const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   try {
-    const response = await api.get('/users/profile');
-    return response.data;
+    console.log('Login attempt for:', credentials.email);
+    
+    const response = await api.post('/users/login', credentials);
+    
+    // Handle different response formats
+    const responseData = response.data.data || response.data;
+    
+    if (responseData.token) {
+      setToken(responseData.token);
+      localStorage.setItem('user', JSON.stringify(responseData.user));
+    }
+    
+    return responseData;
+  } catch (error: any) {
+    console.error('Login error:', error);
+    
+    // Improved error message extraction
+    let errorMessage = 'Login failed. Please check your credentials.';
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    // Add timeout for frontend to stop infinite loading
+    if (error.code === 'ERR_NETWORK') {
+      errorMessage = 'Network error. Please check your connection and try again.';
+    }
+    
+    throw errorMessage;
+  }
+};
+
+/**
+ * Check if user is authenticated
+ */
+const checkAuth = async () => {
+  try {
+    const token = localStorage.getItem('fitness_planner_token');
+    if (!token) {
+      return null;
+    }
+    
+    const response = await api.get('/users/profile', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    return response.data.data || null;
   } catch (error) {
-    console.error('Get current user error:', error);
-    // For auth checking, don't throw - treat failed auth check as "not authenticated"
-    removeToken(); // Clear invalid token
+    console.log('Not authenticated');
     return null;
   }
 };
@@ -120,6 +145,16 @@ export const getCurrentUser = async () => {
 /**
  * Logout user
  */
-export const logout = (): void => {
+const logout = () => {
   removeToken();
+  localStorage.removeItem('user');
 };
+
+const authService = {
+  register,
+  login,
+  logout,
+  checkAuth
+};
+
+export default authService;

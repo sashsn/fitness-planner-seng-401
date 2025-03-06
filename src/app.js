@@ -6,33 +6,28 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
-const userRoutes = require('./routes/userRoutes');
-const { notFound, errorHandler } = require('./middleware/errorMiddleware');
-const { ApiError, logApiError } = require('./utils/errors');
-const logger = require('./utils/logger');
 const path = require('path');
 const { connectDB } = require('./config/database');
+const logger = require('./utils/logger');
+
+// Import error handling
+const { notFound, errorHandler } = require('./middleware/errorHandler');
+
+// Import routes
+const apiRoutes = require('./routes/index');
 
 const app = express();
 
-// Middleware
+// Middleware setup
 app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Make sure JSON parsing is configured correctly
 app.use(express.json({ 
   limit: '2mb',
-  verify: (req, res, buf) => {
-    try {
-      JSON.parse(buf);
-    } catch (e) {
-      console.error('Invalid JSON received:', e.message);
-      res.status(400).send('Invalid JSON');
-      throw new Error('Invalid JSON');
-    }
-  }
 }));
 
 app.use(express.urlencoded({ extended: true }));
@@ -44,13 +39,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // API routes
-app.use('/api/users', userRoutes);
-
-// Add a test endpoint to verify the server is running and accessible
-app.get('/api/test', (req, res) => {
-  console.log('Test endpoint hit');
-  res.json({ message: 'API server is running properly' });
-});
+app.use('/api', apiRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -68,39 +57,28 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// 404 handler for routes not found
-app.use((req, res, next) => {
-  const error = new ApiError(`Not Found - ${req.originalUrl}`, 404);
-  logApiError(error, req);
-  next(error);
-});
-
 // Error handling middleware
-app.use((err, req, res, next) => {
-  logApiError(err, req);
-  
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  const errors = err.errors || [];
-  
-  res.status(statusCode).json({
-    success: false,
-    message,
-    errors,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
-});
+app.use(notFound);
+app.use(errorHandler);
 
 // Start server
-const PORT = 5000; // Force port to be 5000 to match frontend expectations
+const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
-  await connectDB();
-  app.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`);
-  });
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    logger.error(`Failed to start server: ${error.message}`);
+    process.exit(1);
+  }
 };
 
-startServer();
+// Call startServer only if this file is run directly, not when imported
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = app;

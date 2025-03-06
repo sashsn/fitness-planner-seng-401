@@ -1,40 +1,41 @@
 /**
- * Global error handling middleware
- * This middleware should be used as the last middleware in your Express app
- * 
- * @param {Error} err - Error object
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next function
+ * Error handling middleware
  */
 const logger = require('../utils/logger');
-const { ApiError } = require('../utils/errors');
 
-// Error handling middleware
+/**
+ * Not found error handler
+ * Handles 404 errors for routes not found
+ */
+const notFound = (req, res, next) => {
+  const error = new Error(`Not found - ${req.originalUrl}`);
+  error.statusCode = 404;
+  next(error);
+};
+
+/**
+ * Global error handler
+ * Handles all errors and sends appropriate response
+ */
 const errorHandler = (err, req, res, next) => {
-  // Log detailed error information
-  console.error('Error encountered:', err);
-  logger.error(`Error: ${err.message}`);
-  if (req && req.path) {
-    logger.debug(`Request path: ${req.path}`);
-    logger.debug(`Request method: ${req.method}`);
-  }
+  // Log the error
+  logger.error(`Error: ${err.message || 'Unknown error'}`);
   
-  if (err.stack) {
-    logger.debug(`Stack trace: ${err.stack}`);
-  }
-
-  // Use error properties or defaults
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  const errors = err.errors || [];
+  // Get status code (ensure it's a number)
+  const statusCode = typeof err.statusCode === 'number' 
+    ? err.statusCode 
+    : 500;
   
+  // Send the response
   res.status(statusCode).json({
     success: false,
-    message,
-    errors,
+    message: err.message || 'Internal Server Error',
+    errors: err.errors || [],
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 };
 
-module.exports = errorHandler;
+module.exports = {
+  notFound,
+  errorHandler
+};
