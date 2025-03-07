@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import axios from 'axios'; // Import axios
 import {
   getUserWorkouts,
   getWorkoutById,
@@ -93,6 +94,36 @@ export const addExercise = createAsyncThunk(
       return { workoutId, exercise: data };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to add exercise');
+    }
+  }
+);
+
+// Add this function if you need to add generated workouts to your existing workouts
+export const addGeneratedWorkout = createAsyncThunk(
+  'workouts/addGeneratedWorkout',
+  async (workout: any, { rejectWithValue }) => {
+    try {
+      // Format the workout data for your API
+      // First cast to unknown to avoid type errors when converting to Workout
+      const workoutData = {
+        name: workout.name,
+        description: workout.description,
+        workoutType: 'AI Generated',
+        date: new Date().toISOString(),
+        exercises: [], // You might extract exercises from the generated plan
+        duration: workout.duration,
+        generatedPlan: workout.generatedPlan, // Store the full AI-generated plan
+        isCompleted: false, // Add the required property that was missing
+        userId: 'current-user', // Add a placeholder or get from current user
+        intensity: 'medium', // Add a default value
+        notes: workout.additionalNotes || '' // Add any other required fields
+      } as unknown as Workout; // Cast to unknown first, then to Workout
+      
+      // Call your API with axios instead of api
+      const response = await axios.post('/api/workouts', workoutData);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -195,6 +226,19 @@ const workoutSlice = createSlice({
         }
         state.currentWorkout.exercises.push(action.payload.exercise);
       }
+    });
+
+    // Add generated workout
+    builder.addCase(addGeneratedWorkout.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(addGeneratedWorkout.fulfilled, (state, action) => {
+      state.workouts.push(action.payload);
+      state.loading = false;
+    });
+    builder.addCase(addGeneratedWorkout.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
     });
   },
 });

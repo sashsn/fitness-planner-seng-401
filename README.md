@@ -91,6 +91,73 @@ fitness-planner-seng-401/
 - Formik and Yup for form management
 - Chart.js for data visualization
 
+# Fitness Planner
+
+## AI-Powered Workout Generator
+
+The AI-Powered Workout Generator feature allows users to:
+
+1. Generate personalized workout plans based on their preferences
+2. Save generated workout plans to their profile
+3. Share workout plans with others
+4. Print or download workout plans as PDFs
+
+### How to Use the Workout Generator
+
+1. Navigate to the Workout Generator page from your dashboard
+2. Fill out the form with your fitness preferences:
+   - Select your fitness goal
+   - Choose your experience level
+   - Specify workout days and duration
+   - Select available equipment
+   - Add any limitations or special requirements
+3. Click "Generate Workout Plan"
+4. Review your custom workout plan
+5. Save, print, or share your plan
+
+### Technical Implementation
+
+The workout generator uses OpenAI's GPT model to create personalized workout plans based on user inputs. The implementation includes:
+
+- A React frontend with form validation
+- Redux state management for storing workout preferences and plans
+- An Express.js backend API that communicates with the OpenAI API
+- PDF generation using jsPDF and html2canvas
+- Comprehensive error handling and loading states
+
+### Configuration
+
+To use the OpenAI integration, you need to set up your API key:
+
+1. Create a `.env` file in the backend folder
+2. Add your OpenAI API key: `OPENAI_API_KEY=your_key_here`
+3. Set `BYPASS_AUTH=true` for development (optional)
+
+### Example Response Format
+
+The API returns workout plans in the following JSON format:
+
+```json
+{
+  "workoutPlan": {
+    "metadata": {
+      "name": "Custom Fitness Plan",
+      "goal": "Muscle Gain",
+      "fitnessLevel": "Intermediate",
+      "durationWeeks": 4,
+      "createdAt": "2023-03-15T12:00:00Z"
+    },
+    "overview": {
+      "description": "A progressive program focusing on hypertrophy...",
+      "weeklyStructure": "4 days per week, 45 minutes per session",
+      "recommendedEquipment": ["Dumbbells", "Bench", "Pull-up Bar"],
+      "estimatedTimePerSession": "45 minutes"
+    },
+    // Additional fields for schedule, nutrition, etc.
+  }
+}
+```
+
 
 
 

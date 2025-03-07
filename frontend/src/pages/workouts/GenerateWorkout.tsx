@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -19,23 +19,19 @@ import {
   TextField,
   Typography,
   Paper,
-  CircularProgress
+  CircularProgress,
+  Alert,
+  Snackbar
 } from '@mui/material';
-import { generateWorkoutPlan } from '../../services/workoutGeneratorService';
+import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
+import { 
+  generateWorkout, 
+  resetWorkoutGenerator, 
+  setPreferences,
+  saveGeneratedWorkout
+} from '../../features/workoutGenerator/workoutGeneratorSlice';
 import GeneratedWorkoutDisplay from '../../components/workouts/GeneratedWorkoutDisplay';
-
-// Define interface for form values
-interface WorkoutPreferencesForm {
-  fitnessGoal: string;
-  experienceLevel: string;
-  workoutDaysPerWeek: number;
-  workoutDuration: number;
-  availableDays: string[];
-  preferredWorkoutTypes: string[];
-  equipmentAccess: string;
-  limitations: string;
-  additionalNotes: string;
-}
+import { WorkoutPreferences } from '../../services/workoutGeneratorService';
 
 // Define the workout types options
 const workoutTypes = [
@@ -59,144 +55,42 @@ const daysOfWeek = [
   'Sunday'
 ];
 
-const GenerateWorkout: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [generatedWorkout, setGeneratedWorkout] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+// Add analytics tracking
+const trackWorkoutGeneration = (preferences: WorkoutPreferences) => {
+  // This is a placeholder for analytics tracking
+  // In a real app, you'd use something like Google Analytics or Mixpanel
+  console.log('Tracking workout generation:', {
+    fitnessGoal: preferences.fitnessGoal,
+    experienceLevel: preferences.experienceLevel,
+    workoutDaysPerWeek: preferences.workoutDaysPerWeek,
+    equipmentAccess: preferences.equipmentAccess,
+    timestamp: new Date().toISOString()
+  });
+};
 
-  // Add a temporary mock implementation of the API call for testing
-  const handleGenerateWorkout = async (values: WorkoutPreferencesForm) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Mock API call for testing - using setTimeout to simulate network delay
-      setTimeout(() => {
-        // Example response structure matching our expected JSON format
-        const mockResponse = {
-          workoutPlan: {
-            metadata: {
-              name: "Custom Fitness Plan",
-              goal: values.fitnessGoal,
-              fitnessLevel: values.experienceLevel,
-              durationWeeks: 4,
-              createdAt: new Date().toISOString()
-            },
-            overview: {
-              description: "This is a personalized workout plan based on your preferences.",
-              weeklyStructure: `${values.workoutDaysPerWeek} days per week, ~${values.workoutDuration} minutes per session`,
-              recommendedEquipment: values.equipmentAccess === "none" ? ["Body weight"] : 
-                                   values.equipmentAccess === "limited" ? ["Dumbbells", "Resistance bands", "Yoga mat"] :
-                                   ["Barbell", "Dumbbells", "Machines", "Cardio equipment"],
-              estimatedTimePerSession: `${values.workoutDuration} minutes`
-            },
-            schedule: [
-              {
-                week: 1,
-                days: values.availableDays.map(day => {
-                  const isCardioDay = Math.random() > 0.7;
-                  if (isCardioDay) {
-                    return {
-                      dayOfWeek: day,
-                      workoutType: "Cardio",
-                      focus: "Endurance",
-                      duration: values.workoutDuration,
-                      exercises: [
-                        {
-                          name: "Running",
-                          category: "Cardio",
-                          targetMuscles: ["Legs", "Cardiovascular system"],
-                          sets: 1,
-                          reps: 1,
-                          weight: "N/A",
-                          restBetweenSets: 0,
-                          notes: "Maintain steady pace",
-                          alternatives: ["Cycling", "Elliptical"]
-                        }
-                      ],
-                      warmup: {
-                        duration: 5,
-                        description: "Light jogging and dynamic stretches"
-                      },
-                      cooldown: {
-                        duration: 5,
-                        description: "Walking and static stretches"
-                      }
-                    };
-                  } else {
-                    return {
-                      dayOfWeek: day,
-                      workoutType: "Strength",
-                      focus: "Full Body",
-                      duration: values.workoutDuration,
-                      exercises: [
-                        {
-                          name: "Push-ups",
-                          category: "Strength",
-                          targetMuscles: ["Chest", "Triceps", "Shoulders"],
-                          sets: 3,
-                          reps: 10,
-                          weight: "Body weight",
-                          restBetweenSets: 60,
-                          notes: "Focus on form",
-                          alternatives: ["Bench press", "Chest press machine"]
-                        },
-                        {
-                          name: "Squats",
-                          category: "Strength",
-                          targetMuscles: ["Quadriceps", "Glutes", "Hamstrings"],
-                          sets: 3,
-                          reps: 12,
-                          weight: "Body weight",
-                          restBetweenSets: 60,
-                          notes: "Keep knees behind toes",
-                          alternatives: ["Leg press", "Goblet squats"]
-                        }
-                      ],
-                      warmup: {
-                        duration: 5,
-                        description: "Light cardio and dynamic stretches"
-                      },
-                      cooldown: {
-                        duration: 5,
-                        description: "Static stretches focusing on worked muscles"
-                      }
-                    };
-                  }
-                })
-              }
-            ],
-            nutrition: {
-              generalGuidelines: "Focus on protein intake and hydration",
-              dailyProteinGoal: "1g per pound of body weight",
-              mealTimingRecommendation: "Eat within 2 hours after workout"
-            },
-            progressionPlan: {
-              weeklyAdjustments: [
-                {
-                  week: 2,
-                  adjustments: "Increase weight or reps by 5-10%"
-                }
-              ]
-            },
-            additionalNotes: values.limitations ? 
-              `Modified plan considering your limitations: ${values.limitations}` : 
-              "Follow the plan consistently for best results"
-          }
-        };
-        
-        setGeneratedWorkout(JSON.stringify(mockResponse, null, 2));
-        setIsLoading(false);
-      }, 1500);
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      setIsLoading(false);
+const GenerateWorkout: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { loading, workoutPlan, error, success } = useAppSelector(state => state.workoutGenerator);
+  const [openSuccessAlert, setOpenSuccessAlert] = React.useState(false);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = React.useState(false);
+  
+  useEffect(() => {
+    if (success) {
+      setOpenSuccessAlert(true);
     }
+    
+    // Clean up on unmount
+    return () => {
+      dispatch(resetWorkoutGenerator());
+    };
+  }, [success, dispatch]);
+  
+  const handleCloseSuccessAlert = () => {
+    setOpenSuccessAlert(false);
   };
 
-  // Replace the formik onSubmit with our new function
-  const formik = useFormik<WorkoutPreferencesForm>({
+  // Initialize form with Formik
+  const formik = useFormik<WorkoutPreferences>({
     initialValues: {
       fitnessGoal: 'general',
       experienceLevel: 'beginner',
@@ -216,7 +110,10 @@ const GenerateWorkout: React.FC = () => {
       availableDays: Yup.array().min(1, 'Select at least one day'),
       preferredWorkoutTypes: Yup.array().min(1, 'Select at least one workout type')
     }),
-    onSubmit: handleGenerateWorkout
+    onSubmit: (values) => {
+      dispatch(setPreferences(values));
+      dispatch(generateWorkout(values));
+    },
   });
 
   const handleDayToggle = (day: string) => {
@@ -245,6 +142,54 @@ const GenerateWorkout: React.FC = () => {
     formik.setFieldValue('preferredWorkoutTypes', currentTypes);
   };
 
+  const handleSaveWorkout = (name: string, plan: any) => {
+    dispatch(saveGeneratedWorkout({
+      name,
+      workoutPlan: { workoutPlan: plan }
+    }));
+  };
+
+  // Enhance the submission function to include analytics
+  const handleSubmit = async (values: WorkoutPreferences) => {
+    setHasAttemptedSubmit(true);
+    
+    // Track analytics
+    trackWorkoutGeneration(values);
+    
+    // Dispatch actions
+    dispatch(setPreferences(values));
+    dispatch(generateWorkout(values));
+  };
+
+  // Override formik's onSubmit
+  formik.handleSubmit = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    formik.setTouched({
+      fitnessGoal: true,
+      experienceLevel: true,
+      workoutDaysPerWeek: true,
+      workoutDuration: true,
+      availableDays: true,
+      preferredWorkoutTypes: true,
+      equipmentAccess: true
+    });
+    
+    return formik.validateForm().then(
+      () => {
+        if (Object.keys(formik.errors).length === 0) {
+          return handleSubmit(formik.values);
+        }
+      }
+    );
+  };
+
+  // Show all validation errors after first submission attempt
+  React.useEffect(() => {
+    if (hasAttemptedSubmit) {
+      formik.validateForm();
+    }
+  }, [hasAttemptedSubmit, formik.values]);
+
   return (
     <Container maxWidth="md">
       <Box my={4}>
@@ -255,6 +200,25 @@ const GenerateWorkout: React.FC = () => {
           Fill out your preferences and we'll create a personalized workout plan for you
         </Typography>
       </Box>
+      
+      {/* Success alert */}
+      <Snackbar 
+        open={openSuccessAlert} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSuccessAlert}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSuccessAlert} severity="success" sx={{ width: '100%' }}>
+          Workout plan generated successfully!
+        </Alert>
+      </Snackbar>
+      
+      {/* Error alert */}
+      {error && (
+        <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
+          {error}
+        </Alert>
+      )}
       
       <Card>
         <CardContent>
@@ -429,9 +393,9 @@ const GenerateWorkout: React.FC = () => {
                   variant="contained" 
                   color="primary" 
                   fullWidth
-                  disabled={isLoading}
+                  disabled={loading}
                 >
-                  {isLoading ? <CircularProgress size={24} /> : 'Generate Workout Plan'}
+                  {loading ? <CircularProgress size={24} /> : 'Generate Workout Plan'}
                 </Button>
               </Grid>
             </Grid>
@@ -439,18 +403,13 @@ const GenerateWorkout: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Display generated workout or error */}
-      {generatedWorkout && !error && (
+      {/* Display generated workout */}
+      {workoutPlan && (
         <Box mt={4}>
-          <GeneratedWorkoutDisplay workoutPlanData={generatedWorkout} />
-        </Box>
-      )}
-
-      {error && (
-        <Box mt={4}>
-          <Paper elevation={3} sx={{ p: 3, bgcolor: '#fdeded' }}>
-            <Typography color="error">Error: {error}</Typography>
-          </Paper>
+          <GeneratedWorkoutDisplay 
+            workoutPlanData={workoutPlan} 
+            onSave={handleSaveWorkout}
+          />
         </Box>
       )}
     </Container>

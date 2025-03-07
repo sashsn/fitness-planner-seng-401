@@ -4,6 +4,7 @@ import profileReducer from './features/profile/profileSlice';
 import workoutsReducer from './features/workouts/workoutSlice';
 import nutritionReducer from './features/nutrition/nutritionSlice';
 import goalsReducer from './features/goals/goalSlice';
+import workoutGeneratorReducer from './features/workoutGenerator/workoutGeneratorSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     workouts: workoutsReducer,
     nutrition: nutritionReducer,
     goals: goalsReducer,
+    workoutGenerator: workoutGeneratorReducer,
   },
   // Add middleware to log actions in development mode
   middleware: (getDefaultMiddleware) =>
