@@ -18,6 +18,7 @@ interface User {
   height?: number;
   weight?: number;
   role: string;
+  profileImage?: string; // Add this property
 }
 
 // Define AuthState

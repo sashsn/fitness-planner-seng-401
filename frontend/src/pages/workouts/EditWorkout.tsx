@@ -62,8 +62,13 @@ const EditWorkout: React.FC = () => {
             id,
             workout: {
               ...values,
-              duration: values.duration ? Number(values.duration) : undefined,
+              ...currentWorkout,  // Preserve existing workout properties
+              duration: values.duration ? Number(values.duration) : 0,
               caloriesBurned: values.caloriesBurned ? Number(values.caloriesBurned) : undefined,
+              // Make sure we keep the existing arrays and objects
+              exercises: currentWorkout?.exercises || [],
+              userId: currentWorkout?.userId || 'current-user',
+              intensity: currentWorkout?.intensity || 'medium'
             }
           })
         );
@@ -201,7 +206,7 @@ const EditWorkout: React.FC = () => {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   error={formik.touched.caloriesBurned && Boolean(formik.errors.caloriesBurned)}
-                  helperText={formik.touched.caloriesBurned && formik.errors.caloriesBurned}
+                  helperText={formik.touched.caloriesBurned && (formik.errors.caloriesBurned as string)}
                   disabled={loading}
                 />
               </Grid>

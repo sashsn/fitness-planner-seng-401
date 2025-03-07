@@ -4,30 +4,35 @@
 import { format, parseISO } from 'date-fns';
 
 /**
- * Format date string to display format
- * @param dateInput ISO date string or Date object
- * @param formatStr Format string (default: 'MMM d, yyyy')
+ * Format a date string or Date object into a human-readable format
+ * @param dateInput - ISO date string or Date object
  * @returns Formatted date string
  */
-export const formatDate = (dateInput: string | Date, formatStr = 'MMM d, yyyy'): string => {
+export const formatDate = (dateInput: string | Date): string => {
   if (!dateInput) return '';
+  
   try {
-    const date = dateInput instanceof Date ? dateInput : parseISO(dateInput);
-    return format(date, formatStr);
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(date);
   } catch (error) {
     console.error('Error formatting date:', error);
-    return String(dateInput);
+    return typeof dateInput === 'string' ? dateInput : dateInput.toString();
   }
 };
 
 /**
- * Format date and time string
- * @param dateString ISO date string
- * @param formatStr Format string (default: 'MMM d, yyyy h:mm a')
+ * Format date and time string or Date object
+ * @param dateInput ISO date string or Date object
+ * @param formatStr Format string
  * @returns Formatted date and time string
  */
-export const formatDateTime = (dateString: string, formatStr = 'MMM d, yyyy h:mm a'): string => {
-  return formatDate(dateString, formatStr);
+export const formatDateTime = (dateInput: string | Date): string => {
+  // Use our base formatDate function with a default format
+  return formatDate(dateInput);
 };
 
 /**
@@ -73,4 +78,14 @@ export const formatDuration = (minutes?: number): string => {
   } else {
     return `${hours} hr ${mins} min`;
   }
+};
+
+/**
+ * Format number as percentage
+ * @param value - Number to format
+ * @param decimals - Number of decimal places
+ * @returns Formatted percentage string
+ */
+export const formatPercentage = (value: number, decimals = 0): string => {
+  return `${(value * 100).toFixed(decimals)}%`;
 };

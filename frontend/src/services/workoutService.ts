@@ -14,16 +14,22 @@ export interface Exercise {
   notes?: string;
 }
 
+export type WorkoutType = 'cardio' | 'strength' | 'flexibility' | 'balance' | 'other' | 'AI Generated';
+
 export interface Workout {
   id?: string;
   name: string;
-  description?: string;
+  description: string;
+  workoutType: WorkoutType;
   date: string | Date;
-  duration?: number;
-  caloriesBurned?: number;
-  workoutType: 'cardio' | 'strength' | 'flexibility' | 'balance' | 'other';
+  exercises: Exercise[];
+  duration?: number; // Make this optional
   isCompleted: boolean;
-  exercises?: Exercise[];
+  userId: string;
+  intensity: string;
+  notes?: string;
+  generatedPlan?: any; // Add this property to store AI-generated workout plan
+  caloriesBurned?: number; // Add caloriesBurned property
 }
 
 /**

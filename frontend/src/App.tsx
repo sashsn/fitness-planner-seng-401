@@ -1,33 +1,24 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAppSelector } from './hooks/reduxHooks';
-import GenerateWorkout from './pages/workouts/GenerateWorkout';
-import ProtectedRoute from './routes/ProtectedRoute';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
 
-// Auth Pages
+// Import Routes
+import ProtectedRoute from './routes/ProtectedRoute';
+
+// Import Pages
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
-
-// Main Pages
 import Dashboard from './pages/Dashboard';
-import Profile from './pages/Profile';
-import NotFound from './pages/NotFound';
 import Workouts from './pages/workouts/Workouts';
+import GenerateWorkout from './pages/workouts/GenerateWorkout';
+import WorkoutPlans from './pages/workouts/WorkoutPlans';
 import WorkoutDetail from './pages/workouts/WorkoutDetail';
-import CreateWorkout from './pages/workouts/CreateWorkout';
-import EditWorkout from './pages/workouts/EditWorkout';
-import Nutrition from './pages/nutrition/Nutrition';
-import CreateMeal from './pages/nutrition/CreateMeal';
-import EditMeal from './pages/nutrition/EditMeal';
-import Goals from './pages/goals/Goals';
-import CreateGoal from './pages/goals/CreateGoal';
-import EditGoal from './pages/goals/EditGoal';
+import NotFound from './pages/NotFound';
 
-// Simplify the App component for testing
 const App: React.FC = () => {
   return (
     <Routes>
@@ -43,19 +34,12 @@ const App: React.FC = () => {
           <MainLayout />
         </ProtectedRoute>
       }>
-        <Route index element={<Dashboard />} />
-        <Route path="profile" element={<Profile />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="workouts" element={<Workouts />} />
-        <Route path="workouts/create" element={<CreateWorkout />} />
-        <Route path="workouts/:id" element={<WorkoutDetail />} />
-        <Route path="workouts/:id/edit" element={<EditWorkout />} />
         <Route path="workouts/generate" element={<GenerateWorkout />} />
-        <Route path="nutrition" element={<Nutrition />} />
-        <Route path="nutrition/create" element={<CreateMeal />} />
-        <Route path="nutrition/:id/edit" element={<EditMeal />} />
-        <Route path="goals" element={<Goals />} />
-        <Route path="goals/create" element={<CreateGoal />} />
-        <Route path="goals/:id/edit" element={<EditGoal />} />
+        <Route path="workouts/plans" element={<WorkoutPlans />} />
+        <Route path="workouts/:id" element={<WorkoutDetail />} />
       </Route>
 
       {/* 404 Not Found */}

@@ -1,17 +1,16 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-// Create stub components for missing imports
+import MainLayout from '../layouts/MainLayout';
+import GenerateWorkout from '../pages/workouts/GenerateWorkout';
+import WorkoutPlans from '../pages/workouts/WorkoutPlans';
+import Dashboard from '../pages/Dashboard';
+import ProtectedRoute from './ProtectedRoute';
+
+// Create stub components for missing pages
 const Home = () => <div>Home Page</div>;
 const Login = () => <div>Login Page</div>;
 const Register = () => <div>Register Page</div>;
-const Dashboard = () => <div>Dashboard Page</div>;
-// Simple ProtectedRoute implementation
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // In a real app, you'd check auth state here
-  return <>{children}</>;
-};
-
-import GenerateWorkout from '../pages/workouts/GenerateWorkout';
+const Workouts = () => <div>Workouts List Page</div>;
 
 const AppRoutes = () => {
   return (
@@ -20,22 +19,18 @@ const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workouts/generate"
-          element={
-            <ProtectedRoute>
-              <GenerateWorkout />
-            </ProtectedRoute>
-          }
-        />
+        
+        {/* Protected routes using MainLayout with sidebar */}
+        <Route path="/" element={
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="workouts" element={<Workouts />} />
+          <Route path="workouts/generate" element={<GenerateWorkout />} />
+          <Route path="workouts/plans" element={<WorkoutPlans />} />
+        </Route>
       </Routes>
     </Router>
   );

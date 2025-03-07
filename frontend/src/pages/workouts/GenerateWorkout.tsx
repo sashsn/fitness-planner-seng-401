@@ -32,6 +32,7 @@ import {
 } from '../../features/workoutGenerator/workoutGeneratorSlice';
 import GeneratedWorkoutDisplay from '../../components/workouts/GeneratedWorkoutDisplay';
 import { WorkoutPreferences } from '../../services/workoutGeneratorService';
+import NetworkErrorAlert from '../../components/ui/NetworkErrorAlert';
 
 // Define the workout types options
 const workoutTypes = [
@@ -73,18 +74,39 @@ const GenerateWorkout: React.FC = () => {
   const { loading, workoutPlan, error, success } = useAppSelector(state => state.workoutGenerator);
   const [openSuccessAlert, setOpenSuccessAlert] = React.useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = React.useState(false);
+  const [isNetworkError, setIsNetworkError] = React.useState(false);
+  const [scrollToResults, setScrollToResults] = React.useState(false);
+  const resultRef = React.useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    if (success) {
+    if (success && workoutPlan) {
       setOpenSuccessAlert(true);
+      setIsNetworkError(false);
+      setScrollToResults(true); // Set flag to scroll to results
+    }
+    
+    // Check if there's a network error
+    if (error && (
+      error.includes('Network error') || 
+      error.includes('No response from server')
+    )) {
+      setIsNetworkError(true);
     }
     
     // Clean up on unmount
     return () => {
       dispatch(resetWorkoutGenerator());
     };
-  }, [success, dispatch]);
+  }, [success, error, workoutPlan, dispatch]);
   
+  // Add effect to scroll to the results when available
+  useEffect(() => {
+    if (scrollToResults && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setScrollToResults(false);
+    }
+  }, [scrollToResults]);
+
   const handleCloseSuccessAlert = () => {
     setOpenSuccessAlert(false);
   };
@@ -149,16 +171,28 @@ const GenerateWorkout: React.FC = () => {
     }));
   };
 
-  // Enhance the submission function to include analytics
+  // Add retry handler for network errors
+  const handleRetry = () => {
+    if (formik.values) {
+      handleSubmit(formik.values);
+    }
+  };
+
+  // Enhance the submission function to include analytics and better error handling
   const handleSubmit = async (values: WorkoutPreferences) => {
     setHasAttemptedSubmit(true);
+    setIsNetworkError(false);
     
     // Track analytics
     trackWorkoutGeneration(values);
     
     // Dispatch actions
-    dispatch(setPreferences(values));
-    dispatch(generateWorkout(values));
+    try {
+      dispatch(setPreferences(values));
+      dispatch(generateWorkout(values));
+    } catch (error) {
+      console.error('Error submitting workout generation request:', error);
+    }
   };
 
   // Override formik's onSubmit
@@ -213,12 +247,17 @@ const GenerateWorkout: React.FC = () => {
         </Alert>
       </Snackbar>
       
-      {/* Error alert */}
-      {error && (
+      {/* Error alerts - distinguish between network errors and other errors */}
+      {isNetworkError ? (
+        <NetworkErrorAlert 
+          message={error || "Network connection error"}
+          onRetry={handleRetry} 
+        />
+      ) : error ? (
         <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
           {error}
         </Alert>
-      )}
+      ) : null}
       
       <Card>
         <CardContent>
@@ -403,9 +442,21 @@ const GenerateWorkout: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Display generated workout */}
+      {/* Display generated workout with reference */}
       {workoutPlan && (
-        <Box mt={4}>
+        <Box mt={4} ref={resultRef}>
+          <Typography variant="h4" component="h2" gutterBottom align="center" 
+            sx={{ 
+              background: 'linear-gradient(90deg, #4a90e2, #8e64c5)', 
+              color: 'white',
+              p: 2,
+              borderRadius: 2,
+              mb: 3,
+              boxShadow: 3
+            }}
+          >
+            Your Custom Workout Plan
+          </Typography>
           <GeneratedWorkoutDisplay 
             workoutPlanData={workoutPlan} 
             onSave={handleSaveWorkout}

@@ -137,7 +137,7 @@ const WorkoutDetail: React.FC = () => {
                     Calories
                   </Typography>
                   <Typography variant="body2">
-                    {currentWorkout.caloriesBurned || 0} cal
+                    {currentWorkout.caloriesBurned !== undefined ? currentWorkout.caloriesBurned : 0} cal
                   </Typography>
                 </Grid>
                 

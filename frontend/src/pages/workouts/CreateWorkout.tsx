@@ -47,8 +47,11 @@ const CreateWorkout: React.FC = () => {
         addWorkout({
           ...values,
           workoutType: values.workoutType as 'cardio' | 'strength' | 'flexibility' | 'balance' | 'other',
-          duration: values.duration ? Number(values.duration) : undefined,
+          duration: values.duration ? Number(values.duration) : 0, // Default to 0 instead of undefined
           caloriesBurned: values.caloriesBurned ? Number(values.caloriesBurned) : undefined,
+          exercises: [],           // Initialize with empty array
+          userId: 'current-user',  // Will be replaced by the backend with the actual user ID
+          intensity: 'medium'      // Default intensity
         })
       );
 
