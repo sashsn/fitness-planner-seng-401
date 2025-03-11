@@ -8,7 +8,8 @@ import {
   deleteWorkout,
   addExerciseToWorkout,
   Workout,
-  Exercise
+  Exercise,
+  WorkoutType
 } from '../../services/workoutService';
 
 interface WorkoutState {
@@ -31,8 +32,68 @@ export const fetchWorkouts = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const data = await getUserWorkouts();
+      
+      // For development/debugging: If no workouts returned, add a mock AI Generated workout
+      if (process.env.NODE_ENV === 'development' && (!data || data.length === 0)) {
+        console.log('Adding mock AI Generated workout for testing');
+        
+        // Create a sample AI generated workout
+        const mockWorkout = {
+          id: 'mock-' + Date.now(),
+          name: 'Sample AI Workout',
+          description: 'This is a sample AI generated workout for testing',
+          workoutType: 'AI Generated' as WorkoutType,
+          date: new Date().toISOString(),
+          exercises: [],
+          duration: 45,
+          isCompleted: false,
+          userId: 'current-user',
+          intensity: 'medium',
+          notes: '',
+          generatedPlan: JSON.stringify({
+            workoutPlan: {
+              metadata: {
+                name: "Sample Workout Plan",
+                goal: "Weight Loss",
+                fitnessLevel: "Intermediate",
+                durationWeeks: 4,
+                createdAt: new Date().toISOString()
+              },
+              overview: {
+                description: "A sample workout plan for testing",
+                weeklyStructure: "3 days per week",
+                recommendedEquipment: ["Dumbbells", "Mat"],
+                estimatedTimePerSession: "45"
+              },
+              schedule: [
+                {
+                  week: 1,
+                  days: []
+                }
+              ],
+              nutrition: {
+                generalGuidelines: "Sample nutrition guidelines",
+                dailyProteinGoal: "1g per pound of body weight",
+                mealTimingRecommendation: "Every 3-4 hours"
+              },
+              progressionPlan: {
+                weeklyAdjustments: []
+              },
+              additionalNotes: "Sample additional notes"
+            }
+          })
+        };
+        
+        return [mockWorkout];
+      }
+      
       return data;
     } catch (error: any) {
+      // Provide sample data when in development mode and there's a network error
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Using mock workout data due to API error');
+        return [];
+      }
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch workouts');
     }
   }
@@ -54,9 +115,26 @@ export const addWorkout = createAsyncThunk(
   'workouts/add',
   async (workoutData: Workout, { rejectWithValue }) => {
     try {
+      console.log('🚀 Workouts Slice: Adding workout:', workoutData.name);
+      console.log('🏷️ Workouts Slice: Workout type:', workoutData.workoutType);
+      
+      // Add additional validation and logging for AI Generated workouts
+      if (workoutData.workoutType === 'AI Generated') {
+        console.log('🤖 Workouts Slice: Adding AI Generated workout');
+        if (workoutData.generatedPlan) {
+          console.log('📊 Generated plan data type:', typeof workoutData.generatedPlan);
+          console.log('📊 Generated plan data size:', typeof workoutData.generatedPlan === 'string' 
+            ? workoutData.generatedPlan.length : 'unknown');
+        } else {
+          console.warn('⚠️ AI Generated workout missing plan data!');
+        }
+      }
+      
       const data = await createWorkout(workoutData);
+      console.log('✅ Workouts Slice: Workout added successfully:', data);
       return data;
     } catch (error: any) {
+      console.error('❌ Workouts Slice: Failed to add workout:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to create workout');
     }
   }
@@ -175,7 +253,15 @@ const workoutSlice = createSlice({
       state.error = null;
     });
     builder.addCase(addWorkout.fulfilled, (state, action) => {
-      state.workouts.push(action.payload);
+      console.log('✅ Workouts Slice Reducer: Adding workout to state:', action.payload);
+      
+      // Add validation to ensure the workoutType is preserved
+      const workout = action.payload;
+      if (workout.workoutType === 'AI Generated') {
+        console.log('🤖 Workouts Slice Reducer: Preserving AI Generated workout type');
+      }
+      
+      state.workouts.push(workout);
       state.loading = false;
     });
     builder.addCase(addWorkout.rejected, (state, action) => {

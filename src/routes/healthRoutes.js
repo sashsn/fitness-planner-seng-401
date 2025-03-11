@@ -1,17 +1,11 @@
+/**
+ * Health check routes
+ */
 const express = require('express');
 const router = express.Router();
+const { getHealthStatus } = require('../controllers/healthController');
 
-/**
- * @route GET /api/health-check
- * @description Check if the API is running
- * @access Public
- */
-router.get('/health-check', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
+// Health check endpoint
+router.get('/health-check', getHealthStatus);
 
 module.exports = router;

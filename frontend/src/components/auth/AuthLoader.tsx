@@ -17,16 +17,13 @@ interface AuthLoaderProps {
  */
 const AuthLoader: React.FC<AuthLoaderProps> = ({ children }) => {
   const dispatch = useAppDispatch();
-  const { checkingAuth, error } = useAppSelector(state => state.auth);
+  const { checkingAuth, error, isAuthenticated } = useAppSelector(state => state.auth);
   const [timeoutOccurred, setTimeoutOccurred] = useState(false);
   const [loadingTime, setLoadingTime] = useState(0);
 
   useEffect(() => {
     // Log initial state for debugging
     debugState(store);
-    
-    // Start auth check
-    dispatch(checkAuth());
     
     // Set a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
@@ -47,11 +44,22 @@ const AuthLoader: React.FC<AuthLoaderProps> = ({ children }) => {
     };
   }, [dispatch]);
 
+  // Log important auth state changes
+  useEffect(() => {
+    console.log("AuthLoader - Auth state:", { 
+      isAuthenticated, 
+      checkingAuth, 
+      timeoutOccurred 
+    });
+  }, [isAuthenticated, checkingAuth, timeoutOccurred]);
+
   // Show the application if loading completes or timeout occurs
-  if (!checkingAuth || timeoutOccurred) {
+  if (!checkingAuth || timeoutOccurred || isAuthenticated) {
+    console.log("AuthLoader - Rendering children");
     return <>{children}</>;
   }
 
+  console.log("AuthLoader - Still loading, showing spinner");
   return (
     <Box sx={{ 
       display: 'flex', 

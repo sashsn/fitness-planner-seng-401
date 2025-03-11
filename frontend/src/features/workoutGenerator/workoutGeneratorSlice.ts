@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { WorkoutPreferences, generateWorkoutPlan } from '../../services/workoutGeneratorService';
 import { addWorkout } from '../workouts/workoutSlice';
+import { Workout, WorkoutType } from '../../services/workoutService';
 
 interface WorkoutPlan {
   workoutPlan: {
@@ -22,6 +23,8 @@ interface WorkoutPlan {
       generalGuidelines: string;
       dailyProteinGoal: string;
       mealTimingRecommendation: string;
+      calculatedDailyProtein?: number | null; // Add this property as optional
+      dailyCalorieGoal?: string | null; // Add this property as optional
     };
     progressionPlan: {
       weeklyAdjustments: any[];
@@ -55,11 +58,33 @@ const initialState: WorkoutGeneratorState = {
 // Async thunk for generating a workout plan
 export const generateWorkout = createAsyncThunk(
   'workoutGenerator/generate',
-  async (preferences: WorkoutPreferences, { rejectWithValue }) => {
+  async (preferences: WorkoutPreferences, { rejectWithValue, getState }) => {
     try {
+      // Get user profile from state
+      const state: any = getState();
+      const userProfile = state.profile?.profile || {};
+      
+      // Add user profile data to preferences for personalized calculations
+      const preferencesWithProfile = {
+        ...preferences,
+        userProfile: {
+          weight: userProfile.weight || null,
+          height: userProfile.height || null,
+          age: userProfile.age || null,
+          gender: userProfile.gender || null,
+          weightUnit: userProfile.weightUnit || 'kg',
+          heightUnit: userProfile.heightUnit || 'cm',
+        }
+      };
+      
+      console.log('📊 Adding user metrics to workout generation request:', 
+        preferencesWithProfile.userProfile.weight ? 
+        `Weight: ${preferencesWithProfile.userProfile.weight}${preferencesWithProfile.userProfile.weightUnit}` : 
+        'No weight data');
+      
       // Try to get from API 
       try {
-        const response = await generateWorkoutPlan(preferences);
+        const response = await generateWorkoutPlan(preferencesWithProfile);
         return response;
       } catch (error: any) {
         // If error is specifically because mock API is enabled, use mock data
@@ -67,7 +92,7 @@ export const generateWorkout = createAsyncThunk(
             error.message.includes('Network error') || 
             error.message.includes('No response from server')) {
           console.log('Using mock workout generation due to API unavailability');
-          return mockGenerateWorkout(preferences);
+          return mockGenerateWorkout(preferencesWithProfile);
         }
         // Otherwise rethrow the error to be caught by the outer catch
         throw error;
@@ -80,13 +105,46 @@ export const generateWorkout = createAsyncThunk(
 );
 
 // Mock function for development
-const mockGenerateWorkout = (preferences: WorkoutPreferences): Promise<WorkoutPlan> => {
+const mockGenerateWorkout = (preferences: WorkoutPreferences & { userProfile?: any }): Promise<WorkoutPlan> => {
   console.log('Generating mock workout plan with preferences:', preferences);
   
   return new Promise((resolve) => {
     // Show a loading state for a more realistic experience
     setTimeout(() => {
       console.log('Mock workout plan generated successfully');
+      
+      // Calculate personalized values based on user profile data
+      const userProfile = preferences.userProfile || {};
+      let dailyProtein = 'Approximately 1g per pound of body weight';
+      let calculatedProtein = null;
+      let dailyCalories = null;
+      
+      if (userProfile.weight) {
+        // Calculate protein based on weight
+        const weightInLbs = userProfile.weightUnit === 'kg' ? 
+          userProfile.weight * 2.20462 : userProfile.weight;
+        calculatedProtein = Math.round(weightInLbs);
+        dailyProtein = `${calculatedProtein}g (1g per pound of body weight)`;
+        
+        // Calculate calories if height and weight available
+        if (userProfile.height) {
+          const bmr = userProfile.gender === 'female' ? 
+            655 + (9.6 * userProfile.weight) + (1.8 * userProfile.height) - (4.7 * (userProfile.age || 30)) :
+            66 + (13.7 * userProfile.weight) + (5 * userProfile.height) - (6.8 * (userProfile.age || 30));
+          
+          const activityFactor = preferences.workoutDaysPerWeek >= 5 ? 1.725 : 
+            preferences.workoutDaysPerWeek >= 3 ? 1.55 : 1.375;
+            
+          const tdee = Math.round(bmr * activityFactor);
+          
+          // Adjust calories based on goal
+          const goalAdjustment = preferences.fitnessGoal === 'weightLoss' ? -500 :
+            preferences.fitnessGoal === 'muscleGain' ? 300 : 0;
+            
+          dailyCalories = `${tdee + goalAdjustment} calories`;
+        }
+      }
+      
       resolve({
         workoutPlan: {
           metadata: {
@@ -181,9 +239,11 @@ const mockGenerateWorkout = (preferences: WorkoutPreferences): Promise<WorkoutPl
             }
           ],
           nutrition: {
-            generalGuidelines: "Focus on protein intake and hydration",
-            dailyProteinGoal: "1g per pound of body weight",
-            mealTimingRecommendation: "Eat within 2 hours after workout"
+            generalGuidelines: "Focus on protein intake and hydration. Ensure balanced meals with plenty of vegetables.",
+            dailyProteinGoal: dailyProtein,
+            calculatedDailyProtein: calculatedProtein, // Now allowed by interface
+            dailyCalorieGoal: dailyCalories, // Now allowed by interface
+            mealTimingRecommendation: "Eat within 2 hours after workout for optimal recovery. Space meals 3-4 hours apart throughout the day."
           },
           progressionPlan: {
             weeklyAdjustments: [
@@ -207,25 +267,42 @@ export const saveGeneratedWorkout = createAsyncThunk(
   'workoutGenerator/saveWorkout',
   async (workout: SavedWorkout, { dispatch }) => {
     try {
-      // Here we're just adding it to our workouts slice
-      // You might want to save it to your backend as well
-      dispatch(addWorkout({
+      console.log('📝 Workout Generator: Preparing to save workout plan:', workout.name);
+      
+      // Create a proper workout object with all required fields
+      const workoutToSave = {
         name: workout.name,
         description: workout.workoutPlan.workoutPlan.overview.description,
-        workoutType: 'AI Generated',
-        generatedPlan: workout.workoutPlan, // Store the full plan
+        workoutType: 'AI Generated' as WorkoutType, // Ensure this exact string matches what's expected in the filter
+        generatedPlan: JSON.stringify(workout.workoutPlan), // Stringify the plan for storage
         date: new Date().toISOString(),
-        duration: parseInt(workout.workoutPlan.workoutPlan.overview.estimatedTimePerSession) || 0, // Ensure this is a number
+        duration: parseInt(workout.workoutPlan.workoutPlan.overview.estimatedTimePerSession) || 0,
         isCompleted: false,
-        userId: 'current-user',
+        userId: 'current-user', // Will be replaced by the backend with actual user ID
         intensity: 'medium',
         notes: workout.workoutPlan.workoutPlan.additionalNotes || '',
-        exercises: [],
-        caloriesBurned: undefined // Add this to satisfy the type
-      } as unknown as any)); // Use a safer type assertion
+        exercises: [], // Initialize with empty array
+        caloriesBurned: undefined
+      };
+      
+      console.log('✅ Workout Generator: workoutToSave object created');
+      console.log('🏷️ Workout Type:', workoutToSave.workoutType);
+      console.log('📊 Plan size (bytes):', workoutToSave.generatedPlan.length);
+      
+      // Dispatch to add workout
+      console.log('🚀 Workout Generator: Dispatching addWorkout action');
+      const result = await dispatch(addWorkout(workoutToSave as Workout));
+      
+      if (addWorkout.rejected.match(result)) {
+        console.error('❌ Workout Generator: Failed to save workout', result.payload);
+        throw new Error(result.payload as string || 'Failed to save workout');
+      } else {
+        console.log('✅ Workout Generator: Workout saved successfully', result.payload);
+      }
       
       return workout;
     } catch (error: any) {
+      console.error('❌ Error in saveGeneratedWorkout:', error);
       throw new Error(error.message || 'Failed to save workout');
     }
   }

@@ -14,11 +14,15 @@ import {
   ListItem,
   ListItemText,
   Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AddIcon from '@mui/icons-material/Add';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
 import { fetchWorkoutById, removeWorkout, clearWorkoutErrors } from '../../features/workouts/workoutSlice';
@@ -66,6 +70,25 @@ const WorkoutDetail: React.FC = () => {
     // This would open a dialog or navigate to an add exercise page
     console.log('Add exercise clicked');
   };
+
+  // Helper function to parse the workout plan
+  const getParsedWorkoutPlan = () => {
+    if (!currentWorkout?.generatedPlan) return null;
+    
+    try {
+      if (typeof currentWorkout.generatedPlan === 'string') {
+        return JSON.parse(currentWorkout.generatedPlan).workoutPlan;
+      } else if (currentWorkout.generatedPlan?.workoutPlan) {
+        return currentWorkout.generatedPlan.workoutPlan;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error parsing workout plan:', error);
+      return null;
+    }
+  };
+  
+  const workoutPlan = getParsedWorkoutPlan();
 
   if (loading || !currentWorkout) {
     return <LoadingSpinner />;
@@ -201,6 +224,80 @@ const WorkoutDetail: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Add AI Generated Plan Details if available */}
+        {currentWorkout.workoutType === 'AI Generated' && workoutPlan && (
+          <Grid item xs={12}>
+            <Card sx={{ mt: 3 }}>
+              <CardHeader title="AI-Generated Workout Plan" />
+              <Divider />
+              <CardContent>
+                {/* Metadata */}
+                <Box mb={3}>
+                  <Typography variant="h6">Plan Overview</Typography>
+                  <Typography variant="body2" paragraph>{workoutPlan.overview.description}</Typography>
+                  
+                  <Grid container spacing={2}>
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Goal</Typography>
+                      <Typography variant="body2">{workoutPlan.metadata.goal}</Typography>
+                    </Grid>
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Level</Typography>
+                      <Typography variant="body2">{workoutPlan.metadata.fitnessLevel}</Typography>
+                    </Grid>
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="subtitle2" color="text.secondary">Duration</Typography>
+                      <Typography variant="body2">{workoutPlan.metadata.durationWeeks} weeks</Typography>
+                    </Grid>
+                  </Grid>
+                </Box>
+                
+                {/* Weekly Schedule */}
+                <Typography variant="h6" gutterBottom>Weekly Schedule</Typography>
+                {workoutPlan.schedule.map((week: any) => (
+                  <Accordion key={week.week}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography>Week {week.week}</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Grid container spacing={2}>
+                        {week.days.map((day: any, idx: number) => (
+                          <Grid item xs={12} key={idx}>
+                            <Typography variant="subtitle1" fontWeight="bold">
+                              {day.dayOfWeek}
+                            </Typography>
+                            {day.isRestDay ? (
+                              <Typography variant="body2">Rest Day</Typography>
+                            ) : (
+                              <>
+                                <Typography variant="body2">
+                                  {day.workoutType} - {day.focus} ({day.duration} min)
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Exercises: {day.exercises.map((ex: any) => ex.name).join(', ')}
+                                </Typography>
+                              </>
+                            )}
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </AccordionDetails>
+                  </Accordion>
+                ))}
+                
+                {/* Nutrition Guidelines */}
+                <Box mt={3}>
+                  <Typography variant="h6" gutterBottom>Nutrition Guidelines</Typography>
+                  <Typography variant="body2" paragraph>{workoutPlan.nutrition.generalGuidelines}</Typography>
+                  <Typography variant="body2">
+                    <strong>Daily Protein Goal:</strong> {workoutPlan.nutrition.dailyProteinGoal}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
       </Grid>
 
       <ConfirmDialog

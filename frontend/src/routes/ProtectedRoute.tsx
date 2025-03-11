@@ -1,32 +1,42 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { CircularProgress, Box } from '@mui/material';
+import { useAppSelector } from '../hooks/reduxHooks';
 
-// Simple version that doesn't depend on Redux states that might be causing issues
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
+/**
+ * Route guard that only allows authenticated users
+ */
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  // Instead of waiting for a potentially infinite auth check, let's make it simpler for now
-  // We can improve this later once the basic functionality is working
+  const auth = useAppSelector(state => state.auth);
+  const { isAuthenticated, isLoading, checkingAuth, user } = auth;
   
-  // Mock authentication for testing - remove this in production and use proper auth
-  const isAuthenticated = true; // Always authenticate for now
-  const isLoading = false;      // Never show loading for now
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
+  // Debug authentication state
+  useEffect(() => {
+    console.log('ProtectedRoute - Auth State:', {
+      isAuthenticated,
+      isLoading,
+      checkingAuth,
+      hasUser: !!user
+    });
+  }, [isAuthenticated, isLoading, checkingAuth, user]);
+  
+  // Show nothing while checking auth status
+  if (isLoading || checkingAuth) {
+    console.log('ProtectedRoute - Still loading, showing nothing');
+    return null;
   }
-
+  
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    console.log('ProtectedRoute - Not authenticated, redirecting to login');
+    return <Navigate to="/login" replace />;
   }
-
+  
+  // Render children if authenticated
+  console.log('ProtectedRoute - User authenticated, rendering children');
   return <>{children}</>;
 };
 

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom'; // Add this import for navigation
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -18,9 +19,9 @@ import {
   RadioGroup,
   TextField,
   Typography,
-  Paper,
   CircularProgress,
   Alert,
+  AlertTitle, // Add this import for AlertTitle
   Snackbar
 } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
@@ -58,8 +59,6 @@ const daysOfWeek = [
 
 // Add analytics tracking
 const trackWorkoutGeneration = (preferences: WorkoutPreferences) => {
-  // This is a placeholder for analytics tracking
-  // In a real app, you'd use something like Google Analytics or Mixpanel
   console.log('Tracking workout generation:', {
     fitnessGoal: preferences.fitnessGoal,
     experienceLevel: preferences.experienceLevel,
@@ -70,46 +69,58 @@ const trackWorkoutGeneration = (preferences: WorkoutPreferences) => {
 };
 
 const GenerateWorkout: React.FC = () => {
+  const navigate = useNavigate(); // Add this hook for navigation
   const dispatch = useAppDispatch();
   const { loading, workoutPlan, error, success } = useAppSelector(state => state.workoutGenerator);
-  const [openSuccessAlert, setOpenSuccessAlert] = React.useState(false);
-  const [hasAttemptedSubmit, setHasAttemptedSubmit] = React.useState(false);
-  const [isNetworkError, setIsNetworkError] = React.useState(false);
-  const [scrollToResults, setScrollToResults] = React.useState(false);
-  const resultRef = React.useRef<HTMLDivElement>(null);
+  const { profile } = useAppSelector(state => state.profile);
+  const [openSuccessAlert, setOpenSuccessAlert] = useState(false);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [isNetworkError, setIsNetworkError] = useState(false);
+  const [scrollToResults, setScrollToResults] = useState(false);
+  const resultRef = useRef<HTMLDivElement>(null);
   
+  // Use useEffect for checking workoutPlan and setting success alerts with complete dependencies
   useEffect(() => {
-    if (success && workoutPlan) {
+    if (workoutPlan && 
+        workoutPlan.workoutPlan && 
+        workoutPlan.workoutPlan.metadata) {
+      
+      console.log('📋 LLM response received:', workoutPlan.workoutPlan.metadata.name);
       setOpenSuccessAlert(true);
       setIsNetworkError(false);
-      setScrollToResults(true); // Set flag to scroll to results
+      setScrollToResults(true);
     }
-    
-    // Check if there's a network error
+  }, [workoutPlan, setOpenSuccessAlert, setIsNetworkError, setScrollToResults]); // Fixed: Added all state setters to dependencies
+  
+  // Separate effect for error handling with proper dependencies
+  useEffect(() => {
     if (error && (
       error.includes('Network error') || 
       error.includes('No response from server')
     )) {
       setIsNetworkError(true);
     }
-    
-    // Clean up on unmount
+  }, [error, setIsNetworkError]); // Fixed: Added state setter to dependencies
+  
+  // Clean up function in separate effect
+  useEffect(() => {
     return () => {
       dispatch(resetWorkoutGenerator());
     };
-  }, [success, error, workoutPlan, dispatch]);
+  }, [dispatch]);
   
-  // Add effect to scroll to the results when available
+  // Separate effect for scrolling with proper dependencies
   useEffect(() => {
     if (scrollToResults && resultRef.current) {
       resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setScrollToResults(false);
     }
-  }, [scrollToResults]);
+  }, [scrollToResults, setScrollToResults]); // Fixed: Added state setter to dependencies
 
-  const handleCloseSuccessAlert = () => {
+  // Properly memoize event handlers with useCallback
+  const handleCloseSuccessAlert = useCallback(() => {
     setOpenSuccessAlert(false);
-  };
+  }, [setOpenSuccessAlert]); // Fixed: Added state setter to dependencies
 
   // Initialize form with Formik
   const formik = useFormik<WorkoutPreferences>({
@@ -133,12 +144,20 @@ const GenerateWorkout: React.FC = () => {
       preferredWorkoutTypes: Yup.array().min(1, 'Select at least one workout type')
     }),
     onSubmit: (values) => {
+      setHasAttemptedSubmit(true);
+      setIsNetworkError(false);
+      
+      // Track analytics
+      trackWorkoutGeneration(values);
+      
+      // Dispatch actions
       dispatch(setPreferences(values));
       dispatch(generateWorkout(values));
-    },
+    }
   });
 
-  const handleDayToggle = (day: string) => {
+  // Properly memoized day toggle handler with useCallback
+  const handleDayToggle = useCallback((day: string) => {
     const currentDays = [...formik.values.availableDays];
     const currentIndex = currentDays.indexOf(day);
     
@@ -149,9 +168,10 @@ const GenerateWorkout: React.FC = () => {
     }
     
     formik.setFieldValue('availableDays', currentDays);
-  };
+  }, [formik.values.availableDays, formik.setFieldValue]); // Fixed: Properly memoized with correct dependencies
 
-  const handleWorkoutTypeToggle = (type: string) => {
+  // Properly memoized workout type toggle handler with useCallback
+  const handleWorkoutTypeToggle = useCallback((type: string) => {
     const currentTypes = [...formik.values.preferredWorkoutTypes];
     const currentIndex = currentTypes.indexOf(type);
     
@@ -162,67 +182,54 @@ const GenerateWorkout: React.FC = () => {
     }
     
     formik.setFieldValue('preferredWorkoutTypes', currentTypes);
-  };
+  }, [formik.values.preferredWorkoutTypes, formik.setFieldValue]); // Fixed: Properly memoized with correct dependencies
 
-  const handleSaveWorkout = (name: string, plan: any) => {
+  // Properly memoized retry handler with useCallback
+  const handleRetry = useCallback(() => {
+    if (formik.values) {
+      formik.handleSubmit(); // Use formik's built-in handle submit
+    }
+  }, [formik]); // Fixed: Added formik to dependencies
+
+  // Memoize form validation effect dependencies
+  const validateFormCallback = useCallback(() => {
+    if (hasAttemptedSubmit) {
+      formik.validateForm();
+    }
+  }, [hasAttemptedSubmit, formik.validateForm]); // Memoize the callback itself
+
+  useEffect(() => {
+    validateFormCallback();
+  }, [validateFormCallback]); // Now the effect only depends on the memoized callback
+
+  // Properly memoized save function with useCallback
+  const handleSaveWorkout = useCallback((name: string, plan: any) => {
     dispatch(saveGeneratedWorkout({
       name,
       workoutPlan: { workoutPlan: plan }
     }));
-  };
+  }, [dispatch]); // Fixed: Added dispatch to dependencies
 
-  // Add retry handler for network errors
-  const handleRetry = () => {
-    if (formik.values) {
-      handleSubmit(formik.values);
+  // Add a banner to notify users when profile data is missing
+  const showProfileDataBanner = () => {
+    if (!profile || (!profile.weight && !profile.height)) {
+      return (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <AlertTitle>For better results</AlertTitle>
+          Update your profile with your weight and height to get personalized nutrition recommendations.
+          <Button 
+            size="small" 
+            color="primary" 
+            onClick={() => navigate('/profile')}
+            sx={{ ml: 1 }}
+          >
+            Update Profile
+          </Button>
+        </Alert>
+      );
     }
+    return null;
   };
-
-  // Enhance the submission function to include analytics and better error handling
-  const handleSubmit = async (values: WorkoutPreferences) => {
-    setHasAttemptedSubmit(true);
-    setIsNetworkError(false);
-    
-    // Track analytics
-    trackWorkoutGeneration(values);
-    
-    // Dispatch actions
-    try {
-      dispatch(setPreferences(values));
-      dispatch(generateWorkout(values));
-    } catch (error) {
-      console.error('Error submitting workout generation request:', error);
-    }
-  };
-
-  // Override formik's onSubmit
-  formik.handleSubmit = (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    formik.setTouched({
-      fitnessGoal: true,
-      experienceLevel: true,
-      workoutDaysPerWeek: true,
-      workoutDuration: true,
-      availableDays: true,
-      preferredWorkoutTypes: true,
-      equipmentAccess: true
-    });
-    
-    return formik.validateForm().then(
-      () => {
-        if (Object.keys(formik.errors).length === 0) {
-          return handleSubmit(formik.values);
-        }
-      }
-    );
-  };
-
-  // Show all validation errors after first submission attempt
-  React.useEffect(() => {
-    if (hasAttemptedSubmit) {
-      formik.validateForm();
-    }
-  }, [hasAttemptedSubmit, formik.values]);
 
   return (
     <Container maxWidth="md">
@@ -234,6 +241,9 @@ const GenerateWorkout: React.FC = () => {
           Fill out your preferences and we'll create a personalized workout plan for you
         </Typography>
       </Box>
+      
+      {/* Show banner for profile data */}
+      {showProfileDataBanner()}
       
       {/* Success alert */}
       <Snackbar 
@@ -247,7 +257,7 @@ const GenerateWorkout: React.FC = () => {
         </Alert>
       </Snackbar>
       
-      {/* Error alerts - distinguish between network errors and other errors */}
+      {/* Error alerts */}
       {isNetworkError ? (
         <NetworkErrorAlert 
           message={error || "Network connection error"}
@@ -262,6 +272,7 @@ const GenerateWorkout: React.FC = () => {
       <Card>
         <CardContent>
           <form onSubmit={formik.handleSubmit}>
+            {/* Form fields... */}
             <Grid container spacing={3}>
               {/* Fitness Goal */}
               <Grid item xs={12} md={6}>
@@ -302,6 +313,7 @@ const GenerateWorkout: React.FC = () => {
                 </FormControl>
               </Grid>
 
+              {/* Other form fields... */}
               {/* Workout Days Per Week */}
               <Grid item xs={12} md={6}>
                 <TextField

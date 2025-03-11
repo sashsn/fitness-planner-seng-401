@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -7,57 +7,108 @@ import {
   Grid,
   Card,
   CardContent,
+  CardHeader,
   CardActions,
   Button,
   Chip,
   Divider,
   Stack,
-  CardHeader,
+  Avatar,
   IconButton,
   Tooltip,
-  Avatar,
   useTheme,
-  CircularProgress
+  CircularProgress,
+  Paper,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import AddIcon from '@mui/icons-material/Add';
 import { useAppSelector, useAppDispatch } from '../../hooks/reduxHooks';
 import { formatDate } from '../../utils/format';
 import { fetchWorkouts } from '../../features/workouts/workoutSlice';
-
-// Add types for cleaner code
-interface EquipmentItem {
-  name: string;
-}
+import WorkoutPlanDebug from '../../components/debug/WorkoutPlanDebug';
+import WorkoutCard from '../../components/workouts/WorkoutCard';  // Fixed import path
 
 const WorkoutPlans: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { workouts, loading } = useAppSelector(state => state.workouts);
+  const [showDebug, setShowDebug] = useState(process.env.NODE_ENV === 'development');
   
-  // Filter for AI generated workouts only - use type guard approach
-  const generatedWorkouts = workouts.filter(workout => 
-    workout.workoutType === 'AI Generated' as any
-  );
+  // Use useMemo to prevent filtering during every render
+  const generatedWorkouts = useMemo(() => {
+    return workouts.filter(workout => {
+      const isAIGenerated = 
+        workout.workoutType === 'AI Generated' || 
+        workout.workoutType?.toLowerCase().includes('ai') ||
+        (!!workout.generatedPlan && typeof workout.generatedPlan === 'string' && 
+         workout.generatedPlan.length > 10);
+      // Filter out test users and test plans
+      const isTestUser = workout.userId?.startsWith('test-');
+      const isTestPlan = workout.name?.toLowerCase().includes('test');
+      return isAIGenerated && !isTestUser && !isTestPlan;
+    });
+  }, [workouts]); // Only recompute when workouts change
   
+  // Fetch workouts when component mounts
   useEffect(() => {
     dispatch(fetchWorkouts());
+    console.log("📊 WorkoutPlans: Fetching workouts...");
   }, [dispatch]);
   
-  const handleViewPlan = (id: string) => {
+  // Separate debug logging from render cycle and use useEffect to avoid render issues
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📋 WorkoutPlans: All workouts count:', workouts.length);
+      const uniqueTypes = Array.from(new Set(workouts.map(w => w.workoutType || 'undefined')));
+      console.log('🏷️ WorkoutPlans: Workout types present:', uniqueTypes);
+      console.log('🔢 WorkoutPlans: AI Generated workouts found:', generatedWorkouts.length);
+      if (generatedWorkouts.length > 0) {
+        console.log('📊 WorkoutPlans: Generated workouts details:');
+        generatedWorkouts.forEach((w, idx) => {
+          console.log(`  ${idx+1}. ${w.name} (${w.id})`);
+          console.log(`     - Type: ${w.workoutType}`);
+          console.log(`     - Has plan data: ${!!w.generatedPlan}`);
+          if (w.generatedPlan) {
+            console.log(`     - Plan data type: ${typeof w.generatedPlan}`);
+            const size = typeof w.generatedPlan === 'string' ? w.generatedPlan.length : 'unknown';
+            console.log(`     - Plan data size: ${size} bytes`);
+          }
+        });
+      }
+    }
+  }, [workouts, generatedWorkouts]); // Only run when these dependencies change
+  
+  const handleViewPlan = useCallback((id: string) => {
     navigate(`/workouts/${id}`);
-  };
+  }, [navigate]);
   
-  const handleEditPlan = (id: string) => {
+  const handleEditPlan = useCallback((id: string) => {
     navigate(`/workouts/${id}/edit`);
-  };
+  }, [navigate]);
   
-  const handleNewPlan = () => {
+  const handleNewPlan = useCallback(() => {
     navigate('/workouts/generate');
+  }, [navigate]);
+
+  // Helper function to extract plan data safely - placed outside render function
+  const getPlanData = (workout: any) => {
+    try {
+      if (typeof workout.generatedPlan === 'string') {
+        return JSON.parse(workout.generatedPlan).workoutPlan;
+      } else if (workout.generatedPlan?.workoutPlan) {
+        return workout.generatedPlan.workoutPlan;
+      }
+    } catch (error) {
+      console.error('Error parsing workout plan:', error);
+    }
+    return null;
   };
 
   return (
@@ -74,7 +125,6 @@ const WorkoutPlans: React.FC = () => {
           <Typography variant="h4" component="h1">
             Your Workout Plans
           </Typography>
-          
           <Button 
             variant="contained" 
             color="primary"
@@ -90,168 +140,62 @@ const WorkoutPlans: React.FC = () => {
         </Typography>
       </Box>
       
+      {/* Debug toggle in development mode */}
+      {process.env.NODE_ENV === 'development' && (
+        <Box sx={{ mb: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch 
+                checked={showDebug} 
+                onChange={(e) => setShowDebug(e.target.checked)}
+              />
+            }
+            label="Show Debug Info"
+          />
+        </Box>
+      )}
+      
+      {/* Debug display */}
+      {showDebug && generatedWorkouts.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>Debug: Workout Plans Data</Typography>
+          {generatedWorkouts.map((workout) => (
+            <WorkoutPlanDebug key={workout.id || 'unknown'} workoutData={workout} />
+          ))}
+        </Box>
+      )}
+      
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
           <CircularProgress />
         </Box>
       ) : generatedWorkouts.length > 0 ? (
         <Grid container spacing={3}>
-          {generatedWorkouts.map(workout => {
-            // Extract data from the generated plan with type safety
-            const plan = (workout as any).generatedPlan?.workoutPlan;
-            const goal = plan?.metadata?.goal || '';
-            const level = plan?.metadata?.fitnessLevel || '';
-            const duration = plan?.metadata?.durationWeeks || 4;
-            const equipment: any[] = plan?.overview?.recommendedEquipment || [];
-            
-            return (
-              <Grid item xs={12} md={6} key={workout.id}>
-                <Card 
-                  elevation={2} 
-                  sx={{
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    transition: 'all 0.3s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: theme.shadows[8]
-                    }
-                  }}
-                >
-                  <CardHeader
-                    avatar={
-                      <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
-                        {workout.name.charAt(0).toUpperCase()}
-                      </Avatar>
-                    }
-                    title={workout.name}
-                    subheader={`Created: ${formatDate(workout.date)}`}
-                    action={
-                      <Stack direction="row" spacing={1}>
-                        <Tooltip title="View Plan">
-                          <IconButton 
-                            onClick={() => handleViewPlan(workout.id as string)}
-                            color="primary"
-                            size="small"
-                          >
-                            <VisibilityIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Edit Plan">
-                          <IconButton 
-                            onClick={() => handleEditPlan(workout.id as string)}
-                            color="primary"
-                            size="small"
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    }
-                  />
-                  
-                  <CardContent sx={{ flexGrow: 1, pt: 0 }}>
-                    <Typography variant="body2" color="text.secondary" noWrap sx={{ mb: 2 }}>
-                      {workout.description}
-                    </Typography>
-                    
-                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-                      {goal && (
-                        <Chip 
-                          label={`Goal: ${goal}`} 
-                          size="small" 
-                          color="primary" 
-                          variant="outlined"
-                          sx={{ mb: 1 }}
-                        />
-                      )}
-                      
-                      {level && (
-                        <Chip 
-                          label={`Level: ${level}`} 
-                          size="small"
-                          color="secondary"
-                          variant="outlined"
-                          sx={{ mb: 1 }}
-                        />
-                      )}
-                      
-                      <Chip 
-                        label={`${duration} Weeks`} 
-                        size="small"
-                        icon={<CalendarTodayIcon />}
-                        sx={{ mb: 1 }}
-                      />
-                    </Stack>
-                    
-                    {equipment.length > 0 && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          Equipment:
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                          {equipment.slice(0, 3).map((item: string, idx: number) => (
-                            <Chip key={idx} label={item} size="small" variant="outlined" />
-                          ))}
-                          {equipment.length > 3 && (
-                            <Chip label={`+${equipment.length - 3} more`} size="small" />
-                          )}
-                        </Box>
-                      </Box>
-                    )}
-                  </CardContent>
-                  
-                  <Divider />
-                  <CardActions>
-                    <Button 
-                      size="small" 
-                      onClick={() => handleViewPlan(workout.id as string)}
-                    >
-                      View Details
-                    </Button>
-                    <Box sx={{ flexGrow: 1 }} />
-                    <IconButton 
-                      edge="end" 
-                      color="error" 
-                      aria-label="delete"
-                      size="small"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </CardActions>
-                </Card>
-              </Grid>
-            );
-          })}
+          {generatedWorkouts.map(workout => (
+            <Grid item xs={12} md={6} lg={4} key={workout.id || `workout-${Math.random()}`}>
+              <WorkoutCard 
+                workout={workout}
+                onView={workout.id ? () => handleViewPlan(workout.id as string) : undefined}
+                onEdit={workout.id ? () => handleEditPlan(workout.id as string) : undefined}
+              />
+            </Grid>
+          ))}
         </Grid>
       ) : (
-        <Box 
-          sx={{ 
-            textAlign: 'center', 
-            py: 6, 
-            px: 2,
-            border: '1px dashed',
-            borderColor: 'divider',
-            borderRadius: 2
-          }}
-        >
-          <FitnessCenterIcon sx={{ fontSize: 60, color: 'text.secondary', opacity: 0.3, mb: 2 }} />
-          <Typography variant="h6" paragraph>
-            No workout plans yet
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Generate your first AI workout plan to get started
+        <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No workout plans found
           </Typography>
           <Button 
             variant="contained" 
-            color="primary" 
-            startIcon={<FitnessCenterIcon />}
+            color="primary"
+            startIcon={<AddIcon />}
             onClick={handleNewPlan}
+            sx={{ mt: 2 }}
           >
-            Generate Workout Plan
+            Generate Your First Plan
           </Button>
-        </Box>
+        </Paper>
       )}
     </Container>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -57,11 +57,27 @@ const ExpandableSidebar: React.FC<ExpandableSidebarProps> = ({
   const [open, setOpen] = useState(false);
   const [openSubMenu, setOpenSubMenu] = useState<string | null>('workouts'); // Default open submenu
   const [hoverOpen, setHoverOpen] = useState(false);
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMounted = useRef(true);
 
-  const drawerWidth = open ? 240 : 68;
+  // Calculate drawer width dynamically based on open state
+  const drawerWidth = open || hoverOpen ? 240 : 68;
+  
+  // Active route detection
   const isActive = (path: string) => location.pathname === path;
+  const isActiveGroup = (paths: string[]) => paths.some(path => location.pathname.startsWith(path));
 
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Menu items configuration
   const menuItems: SidebarItem[] = [
     {
       text: 'Dashboard',
@@ -114,6 +130,11 @@ const ExpandableSidebar: React.FC<ExpandableSidebarProps> = ({
 
   const handleDrawerOpen = () => {
     setOpen(true);
+    // When manually opening, cancel any hover effects
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
   };
 
   const handleDrawerClose = () => {
@@ -121,15 +142,29 @@ const ExpandableSidebar: React.FC<ExpandableSidebarProps> = ({
   };
 
   const handleMouseEnter = () => {
-    if (hoverTimeout) clearTimeout(hoverTimeout);
-    setHoverTimeout(setTimeout(() => setHoverOpen(true), 300));
+    // Don't trigger hover if already manually opened
+    if (open) return;
+    
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    hoverTimeoutRef.current = setTimeout(() => {
+      if (isMounted.current) setHoverOpen(true);
+    }, 300);
   };
 
   const handleMouseLeave = () => {
-    if (hoverTimeout) clearTimeout(hoverTimeout);
-    setHoverTimeout(setTimeout(() => setHoverOpen(false), 300));
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    hoverTimeoutRef.current = setTimeout(() => {
+      if (isMounted.current) setHoverOpen(false);
+    }, 300);
   };
 
+  // Is drawer open by any means (manual or hover)
   const isOpenNow = open || hoverOpen;
 
   const handleSubMenuToggle = (menuText: string) => {
@@ -138,8 +173,27 @@ const ExpandableSidebar: React.FC<ExpandableSidebarProps> = ({
 
   const handleMenuItemClick = (path: string) => {
     navigate(path);
+    // Only close hover-triggered state, not manually opened state
+    if (hoverOpen && !open) setHoverOpen(false);
+  };
+
+  const handleLogoutClick = () => {
+    // Call the provided logout handler
+    onLogout();
+    
+    // Close hover state if open
     if (hoverOpen) setHoverOpen(false);
   };
+
+  // Detect active submenu from location
+  useEffect(() => {
+    // Auto-open the submenu containing the active route
+    menuItems.forEach(item => {
+      if (item.subItems && item.subItems.some(subItem => location.pathname.startsWith(subItem.path!))) {
+        setOpenSubMenu(item.text);
+      }
+    });
+  }, [location.pathname]);
 
   const drawer = (
     <Box
@@ -338,7 +392,7 @@ const ExpandableSidebar: React.FC<ExpandableSidebarProps> = ({
         <Tooltip title={isOpenNow ? '' : "Logout"} placement="right">
           <ListItem disablePadding>
             <ListItemButton
-              onClick={onLogout}
+              onClick={handleLogoutClick}
               sx={{
                 borderRadius: '8px',
                 justifyContent: isOpenNow ? 'initial' : 'center',

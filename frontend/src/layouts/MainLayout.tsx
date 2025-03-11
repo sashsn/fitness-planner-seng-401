@@ -5,6 +5,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useAppDispatch, useAppSelector } from '../hooks/reduxHooks';
 import ExpandableSidebar from '../components/layouts/ExpandableSidebar';
+import { logout } from '../features/auth/authSlice';
 
 const MainLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -22,9 +23,10 @@ const MainLayout: React.FC = () => {
   };
   
   const handleLogout = () => {
-    // Implement logout functionality
-    // dispatch(logout());
-    navigate('/login');
+    // Properly dispatch the logout action and navigate to login page
+    dispatch(logout());
+    // Force navigation to login page
+    navigate('/login', { replace: true });
   };
   
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -109,7 +111,7 @@ const MainLayout: React.FC = () => {
       <ExpandableSidebar 
         username={username}
         userAvatar={userAvatar}
-        onLogout={handleLogout}
+        onLogout={handleLogout} // Pass the properly implemented logout handler
       />
       
       {/* Main Content */}

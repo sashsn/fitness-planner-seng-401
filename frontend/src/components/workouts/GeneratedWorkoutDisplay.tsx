@@ -21,7 +21,8 @@ import {
   Stack,
   IconButton,
   Tooltip,
-  CircularProgress
+  CircularProgress,
+  Grid
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SaveIcon from '@mui/icons-material/Save';
@@ -326,8 +327,40 @@ ${workoutPlan.additionalNotes}
       <Box sx={{ mt: 3 }}>
         <Typography variant="h6" gutterBottom>Nutrition Guidelines</Typography>
         <Typography paragraph>{workoutPlan.nutrition.generalGuidelines}</Typography>
-        <Typography><strong>Daily Protein Goal:</strong> {workoutPlan.nutrition.dailyProteinGoal}</Typography>
-        <Typography><strong>Meal Timing:</strong> {workoutPlan.nutrition.mealTimingRecommendation}</Typography>
+        
+        {/* Enhanced display of nutrition information with calculated values */}
+        <Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1, mb: 2 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle2" color="primary">Daily Protein Goal:</Typography>
+              <Typography variant="body1">
+                <strong>{workoutPlan.nutrition.calculatedDailyProtein 
+                  ? `${workoutPlan.nutrition.calculatedDailyProtein}g` 
+                  : workoutPlan.nutrition.dailyProteinGoal}</strong>
+              </Typography>
+              {workoutPlan.nutrition.calculatedDailyProtein && (
+                <Typography variant="caption" color="text.secondary">
+                  Personalized based on your body weight
+                </Typography>
+              )}
+            </Grid>
+            
+            {workoutPlan.nutrition.calculatedCalories && (
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" color="primary">Daily Calorie Target:</Typography>
+                <Typography variant="body1">
+                  <strong>{workoutPlan.nutrition.dailyCalorieGoal}</strong>
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Adjusted for your goal and activity level
+                </Typography>
+              </Grid>
+            )}
+          </Grid>
+          
+          <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>Meal Timing:</Typography>
+          <Typography variant="body2">{workoutPlan.nutrition.mealTimingRecommendation}</Typography>
+        </Box>
       </Box>
       
       {workoutPlan.additionalNotes && (
