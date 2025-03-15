@@ -229,6 +229,9 @@ IMPORTANT: The response must be valid JSON without any additional text. Provide 
  */
 function parseWorkoutPlanResponse(response) {
   try {
+    // Log the raw response for debugging
+    logger.debug(`Raw LLM response length: ${response.length} characters`);
+    
     // First, try to extract JSON if the response contains text around it
     let jsonString = response;
     
@@ -236,7 +239,11 @@ function parseWorkoutPlanResponse(response) {
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       jsonString = jsonMatch[0];
+      logger.debug(`Extracted JSON object with length: ${jsonString.length}`);
     }
+    
+    // Preprocessing: Try to fix common JSON syntax errors
+    jsonString = cleanJsonString(jsonString);
     
     // Parse the JSON
     const workoutPlan = JSON.parse(jsonString);
@@ -249,75 +256,122 @@ function parseWorkoutPlanResponse(response) {
     // Return the parsed workout plan
     return workoutPlan;
   } catch (error) {
-    logger.error(`Failed to parse LLM response: ${error.message}`, { response });
+    logger.error(`Failed to parse LLM response: ${error.message}`);
+    logger.debug(`Response snippet: ${response.substring(0, 200)}...`);
+    
+    if (error.message.includes('position')) {
+      // Extract position from error message
+      const positionMatch = error.message.match(/position (\d+)/);
+      if (positionMatch && positionMatch[1]) {
+        const errorPosition = parseInt(positionMatch[1]);
+        const startPos = Math.max(0, errorPosition - 50);
+        const endPos = Math.min(response.length, errorPosition + 50);
+        
+        logger.error(`Context around error position: "${response.substring(startPos, errorPosition)}[ERROR HERE]${response.substring(errorPosition, endPos)}"`);
+      }
+    }
     
     // If parsing fails, create a minimal valid structure
-    return {
-      workoutPlan: {
-        metadata: {
-          name: "Basic Workout Plan",
-          goal: "General fitness",
-          fitnessLevel: "Beginner",
-          durationWeeks: 4,
-          createdAt: new Date().toISOString()
-        },
-        overview: {
-          description: "This is a basic workout plan generated when the detailed parsing failed.",
-          weeklyStructure: "3 days per week",
-          recommendedEquipment: ["Minimal equipment needed"],
-          estimatedTimePerSession: "30 minutes"
-        },
-        schedule: [
-          {
-            week: 1,
-            days: [
-              {
-                dayOfWeek: "Monday",
-                workoutType: "Full Body",
-                focus: "Strength",
-                duration: 30,
-                exercises: [
-                  {
-                    name: "Bodyweight Squats",
-                    category: "Strength",
-                    targetMuscles: ["Legs"],
-                    sets: 3,
-                    reps: 10,
-                    weight: "Bodyweight",
-                    restBetweenSets: 60,
-                    notes: "Focus on form",
-                    alternatives: ["Lunges"]
-                  }
-                ],
-                warmup: {
-                  duration: 5,
-                  description: "Light cardio and dynamic stretching"
-                },
-                cooldown: {
-                  duration: 5,
-                  description: "Static stretching and breathing exercises"
-                }
-              }
-            ]
-          }
-        ],
-        nutrition: {
-          generalGuidelines: "Focus on whole foods and adequate protein",
-          dailyProteinGoal: "0.8g per kg of bodyweight",
-          mealTimingRecommendation: "Eat every 3-4 hours"
-        },
-        progressionPlan: {
-          weeklyAdjustments: [
+    return generateFallbackPlan();
+  }
+}
+
+/**
+ * Clean JSON string to fix common syntax errors
+ * @param {string} jsonString - Raw JSON string
+ * @returns {string} - Cleaned JSON string
+ */
+function cleanJsonString(jsonString) {
+  try {
+    // Remove potential trailing commas (common error in JSON)
+    jsonString = jsonString.replace(/,(\s*[\]}])/g, '$1');
+    
+    // Handle unquoted property names
+    jsonString = jsonString.replace(/(\{|\,)\s*(\w+)\s*\:/g, '$1"$2":');
+    
+    // Fix missing quotes around string values (more complex, attempt with caution)
+    // This is a simplified approach and might not catch all cases
+    jsonString = jsonString.replace(/:(\s*)([a-zA-Z][a-zA-Z0-9\s]*[a-zA-Z0-9])(\s*)(,|}|])/g, ':"$2"$3$4');
+    
+    return jsonString;
+  } catch (error) {
+    logger.warn(`Error while cleaning JSON string: ${error.message}`);
+    return jsonString; // Return original if cleaning fails
+  }
+}
+
+/**
+ * Generate a fallback workout plan when parsing fails
+ * @returns {Object} - Fallback workout plan
+ */
+function generateFallbackPlan() {
+  logger.info('Generating fallback workout plan due to parsing error');
+  
+  return {
+    workoutPlan: {
+      metadata: {
+        name: "Basic Workout Plan",
+        goal: "General fitness",
+        fitnessLevel: "Beginner",
+        durationWeeks: 4,
+        createdAt: new Date().toISOString()
+      },
+      overview: {
+        description: "This is a basic workout plan generated when the detailed parsing failed.",
+        weeklyStructure: "3 days per week",
+        recommendedEquipment: ["Minimal equipment needed"],
+        estimatedTimePerSession: "30 minutes"
+      },
+      schedule: [
+        {
+          week: 1,
+          days: [
             {
-              week: 2,
-              adjustments: "Increase repetitions by 2-3 per exercise"
+              dayOfWeek: "Monday",
+              workoutType: "Full Body",
+              focus: "Strength",
+              duration: 30,
+              exercises: [
+                {
+                  name: "Bodyweight Squats",
+                  category: "Strength",
+                  targetMuscles: ["Legs"],
+                  sets: 3,
+                  reps: 10,
+                  weight: "Bodyweight",
+                  restBetweenSets: 60,
+                  notes: "Focus on form",
+                  alternatives: ["Lunges"]
+                }
+              ],
+              warmup: {
+                duration: 5,
+                description: "Light cardio and dynamic stretching"
+              },
+              cooldown: {
+                duration: 5,
+                description: "Static stretching and breathing exercises"
+              }
             }
           ]
-        },
-        additionalNotes: "An error occurred during workout plan generation. This is a simplified plan. Please try again or contact support."
-      }
-    };
-  }
+        }
+      ],
+      nutrition: {
+        generalGuidelines: "Focus on whole foods and adequate protein",
+        dailyProteinGoal: "0.8g per kg of bodyweight",
+        mealTimingRecommendation: "Eat every 3-4 hours"
+      },
+      progressionPlan: {
+        weeklyAdjustments: [
+          {
+            week: 2,
+            adjustments: "Increase repetitions by 2-3 per exercise"
+          }
+        ]
+      },
+      additionalNotes: "An error occurred during workout plan generation. This is a simplified plan. Please try again or contact support."
+    }
+  };
 }
 
 module.exports = {
