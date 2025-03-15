@@ -8,6 +8,11 @@ const aiController = require('../controllers/aiController');
 
 const router = express.Router();
 
+// Add simple test route that doesn't rely on controller
+router.get('/test', (req, res) => {
+  res.status(200).json({ message: 'AI routes are correctly registered' });
+});
+
 /**
  * @route POST /api/ai/workout
  * @description Generate a personalized workout plan using AI

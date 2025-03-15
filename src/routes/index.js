@@ -7,6 +7,22 @@ const userRoutes = require('./userRoutes');
 const { register } = require('../controllers/authController');
 const authController = require('../controllers/authController');
 
+// Root API route
+router.get('/', (req, res) => {
+  res.status(200).json({ 
+    message: 'API is running',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      users: '/api/users',
+      workouts: '/api/workouts', 
+      nutrition: '/api/nutrition',
+      goals: '/api/goals',
+      ai: '/api/ai'
+    }
+  });
+});
+
 // Mount user routes
 router.use('/users', userRoutes);
 

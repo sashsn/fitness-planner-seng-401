@@ -65,8 +65,12 @@ const workoutSchema = Joi.object({
   date: Joi.date().iso(),
   duration: Joi.number().integer().min(0),
   caloriesBurned: Joi.number().min(0),
-  workoutType: Joi.string().valid('cardio', 'strength', 'flexibility', 'balance', 'other'),
-  isCompleted: Joi.boolean()
+  workoutType: Joi.string().valid('cardio', 'strength', 'flexibility', 'balance', 'other', 'AI Generated'),
+  isCompleted: Joi.boolean(),
+  intensity: Joi.string(),
+  notes: Joi.string(),
+  generatedPlan: Joi.alternatives().try(Joi.string(), Joi.object()),
+  exercises: Joi.array().items(Joi.object())
 });
 
 // Exercise schema
@@ -87,7 +91,7 @@ const mealSchema = Joi.object({
   name: Joi.string().required(),
   date: Joi.date().iso(),
   mealType: Joi.string().valid('breakfast', 'lunch', 'dinner', 'snack').required(),
-  calories: Joi.number().min(0),
+  calories: Joi.number().min(0).required(),
   protein: Joi.number().min(0),
   carbs: Joi.number().min(0),
   fat: Joi.number().min(0),

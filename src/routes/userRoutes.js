@@ -1,38 +1,52 @@
 /**
  * User Routes
- * Handles user-related endpoints
+ * Handles user management endpoints
  */
 const express = require('express');
 const router = express.Router();
-const { register, login, logout, getCurrentUser } = require('../controllers/authController');
-const { protect } = require('../middleware/authMiddleware');
+const authController = require('../controllers/authController');
 
-// Enhanced routes with debug logging and proper response handling
+// Basic placeholder route
+router.get('/profile', (req, res) => {
+  res.status(200).json({ message: 'User profile endpoint placeholder' });
+});
+
+/**
+ * @route POST /api/users/register
+ * @description Register a new user
+ * @access Public
+ */
 router.post('/register', (req, res, next) => {
-  console.log('User register endpoint hit with:', {
-    email: req.body.email,
-    username: req.body.username,
-    hasPassword: !!req.body.password,
-    firstName: req.body.firstName,
-    lastName: req.body.lastName
-  });
-  register(req, res, next);
+  console.log('User registration route hit, forwarding to register controller');
+  try {
+    authController.register(req, res, next);
+  } catch (error) {
+    console.error('Error in registration route:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Registration failed due to server error',
+      error: error.message
+    });
+  }
 });
 
+/**
+ * @route POST /api/users/login
+ * @description Login a user
+ * @access Public
+ */
 router.post('/login', (req, res, next) => {
-  console.log('User login endpoint hit with:', { 
-    email: req.body.email, 
-    hasPassword: !!req.body.password 
-  });
-  login(req, res, next);
-});
-
-router.post('/logout', logout);
-
-// Profile endpoint (protected)
-router.get('/profile', protect, (req, res, next) => {
-  console.log('Profile endpoint hit by user:', req.user?.id);
-  getCurrentUser(req, res, next);
+  console.log('User login route hit, forwarding to login controller');
+  try {
+    authController.login(req, res, next);
+  } catch (error) {
+    console.error('Error in login route:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Login failed due to server error',
+      error: error.message
+    });
+  }
 });
 
 module.exports = router;

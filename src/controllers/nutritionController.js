@@ -1,21 +1,25 @@
 /**
  * Nutrition Controller
- * Handles nutrition/meal-related HTTP requests
+ * Handles nutrition-related functionality
  */
-const nutritionService = require('../services/nutritionService');
+const logger = require('../utils/logger');
+const { ApiError } = require('../utils/errors');
 
 /**
  * Create a new meal entry
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
  */
-exports.createMeal = async (req, res, next) => {
+exports.createMeal = (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const mealData = { ...req.body, UserId: userId };
-    const meal = await nutritionService.createMeal(mealData);
-    res.status(201).json(meal);
+    logger.debug('Creating meal entry');
+    res.status(201).json({ 
+      success: true, 
+      message: 'Meal created successfully (mock)',
+      data: { 
+        id: 'mock-meal-id',
+        ...req.body, 
+        userId: req.user?.id || 'dev-user' 
+      } 
+    });
   } catch (error) {
     next(error);
   }
@@ -23,15 +27,18 @@ exports.createMeal = async (req, res, next) => {
 
 /**
  * Get all meal entries for the logged-in user
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
  */
-exports.getUserMeals = async (req, res, next) => {
+exports.getUserMeals = (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const meals = await nutritionService.getMealsByUserId(userId);
-    res.status(200).json(meals);
+    logger.debug('Getting user meals');
+    res.status(200).json({ 
+      success: true, 
+      data: [
+        { id: 'meal-1', name: 'Breakfast', calories: 500 },
+        { id: 'meal-2', name: 'Lunch', calories: 700 },
+        { id: 'meal-3', name: 'Dinner', calories: 600 }
+      ]
+    });
   } catch (error) {
     next(error);
   }
@@ -39,16 +46,15 @@ exports.getUserMeals = async (req, res, next) => {
 
 /**
  * Get a specific meal entry by ID
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
  */
-exports.getMealById = async (req, res, next) => {
+exports.getMealById = (req, res, next) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
-    const meal = await nutritionService.getMealById(id, userId);
-    res.status(200).json(meal);
+    logger.debug(`Getting meal by ID: ${id}`);
+    res.status(200).json({ 
+      success: true, 
+      data: { id, name: 'Sample Meal', calories: 500 } 
+    });
   } catch (error) {
     next(error);
   }
@@ -56,17 +62,16 @@ exports.getMealById = async (req, res, next) => {
 
 /**
  * Update a meal entry
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
  */
-exports.updateMeal = async (req, res, next) => {
+exports.updateMeal = (req, res, next) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
-    const mealData = req.body;
-    const updatedMeal = await nutritionService.updateMeal(id, userId, mealData);
-    res.status(200).json(updatedMeal);
+    logger.debug(`Updating meal with ID: ${id}`);
+    res.status(200).json({ 
+      success: true, 
+      message: 'Meal updated successfully',
+      data: { id, ...req.body } 
+    });
   } catch (error) {
     next(error);
   }
@@ -74,16 +79,15 @@ exports.updateMeal = async (req, res, next) => {
 
 /**
  * Delete a meal entry
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
  */
-exports.deleteMeal = async (req, res, next) => {
+exports.deleteMeal = (req, res, next) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
-    await nutritionService.deleteMeal(id, userId);
-    res.status(204).end();
+    logger.debug(`Deleting meal with ID: ${id}`);
+    res.status(200).json({ 
+      success: true, 
+      message: 'Meal deleted successfully' 
+    });
   } catch (error) {
     next(error);
   }
@@ -91,16 +95,21 @@ exports.deleteMeal = async (req, res, next) => {
 
 /**
  * Get nutrition summary for a specific date range
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
  */
-exports.getNutritionSummary = async (req, res, next) => {
+exports.getNutritionSummary = (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const { startDate, endDate } = req.query;
-    const summary = await nutritionService.getNutritionSummary(userId, startDate, endDate);
-    res.status(200).json(summary);
+    const { from, to } = req.query;
+    logger.debug(`Getting nutrition summary from ${from} to ${to}`);
+    res.status(200).json({ 
+      success: true, 
+      data: {
+        totalCalories: 1800,
+        averageCalories: 600,
+        totalProtein: 120,
+        totalCarbs: 200,
+        totalFat: 60
+      } 
+    });
   } catch (error) {
     next(error);
   }

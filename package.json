@@ -12,7 +12,8 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:frontend\"",
     "migrate": "node src/scripts/run-migrations.js",
     "test:workout-gen": "node src/scripts/test-workout-generation.js",
-    "test:api": "node src/scripts/test-api-endpoints.js"
+    "test:api": "node src/scripts/test-api-endpoints.js",
+    "check:structure": "node src/scripts/check-structure.js"
   },
   "dependencies": {
     "axios": "^1.3.4",
@@ -22,8 +23,10 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
+    "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.0",
     "morgan": "^1.10.0",
+    "openai": "^4.87.3",
     "pg": "^8.13.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.29.3",

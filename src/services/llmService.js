@@ -1,26 +1,26 @@
 /**
  * LLM Service
- * Handles communication with the Language Model API
+ * Handles communication with the OpenAI API instead of local LM Studio
  */
 const axios = require('axios');
 const { ApiError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
-// LLM API configuration
-const LLM_API_URL = process.env.LLM_API_URL || 'http://localhost:1234/v1/chat/completions';
-const LLM_API_KEY = process.env.LLM_API_KEY || '';
+// OpenAI API configuration
+const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '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';
 const DEFAULT_TIMEOUT = 60000; // 60 seconds
 
 /**
- * Send a query to the LLM API
- * @param {string} prompt - The prompt to send to the LLM
- * @param {Object} options - Additional options for the LLM query
- * @returns {Promise<Object>} - The response from the LLM
+ * Send a query to the OpenAI API
+ * @param {string} prompt - The prompt to send to the OpenAI
+ * @param {Object} options - Additional options for the OpenAI query
+ * @returns {Promise<Object>} - The response from the OpenAI
  */
 async function queryLLM(prompt, options = {}) {
   try {
     const requestBody = {
-      model: options.model || 'mistral-7b-instruct-v0.2', // Default model
+      model: options.model || 'gpt-3.5-turbo', // Default OpenAI model
       messages: [
         {
           role: 'user',
@@ -32,19 +32,19 @@ async function queryLLM(prompt, options = {}) {
       stream: false
     };
 
-    logger.debug(`Sending request to LLM API: ${JSON.stringify(requestBody)}`);
+    logger.debug(`Sending request to OpenAI API`);
 
-    const response = await axios.post(LLM_API_URL, requestBody, {
+    const response = await axios.post(OPENAI_API_URL, requestBody, {
       headers: {
         'Content-Type': 'application/json',
-        ...(LLM_API_KEY && { 'Authorization': `Bearer ${LLM_API_KEY}` })
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       timeout: options.timeout || DEFAULT_TIMEOUT
     });
 
     return response.data.choices[0].message.content;
   } catch (error) {
-    logger.error(`LLM API Error: ${error.message}`);
+    logger.error(`OpenAI API Error: ${error.message}`);
     if (error.response) {
       logger.error(`Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`);
     }
@@ -80,13 +80,13 @@ async function generateWorkoutPlan(preferences) {
 }
 
 /**
- * Check if the LLM service is available and responsive
+ * Check if the OpenAI service is available and responsive
  * @returns {Promise<Object>} - Health status information
  */
 async function checkHealth() {
   try {
-    // Simple prompt to check if LLM is responsive
-    const response = await queryLLM("Respond with 'LLM is operational'", {
+    // Simple prompt to check if OpenAI is responsive
+    const response = await queryLLM("Respond with 'OpenAI is operational'", {
       maxTokens: 20,
       timeout: 5000 // Short timeout for health checks
     });
@@ -101,8 +101,8 @@ async function checkHealth() {
       message: response
     };
   } catch (error) {
-    logger.error(`LLM health check failed: ${error.message}`);
-    throw new ApiError(503, 'LLM service unavailable: ' + error.message);
+    logger.error(`OpenAI health check failed: ${error.message}`);
+    throw new ApiError(503, 'OpenAI service unavailable: ' + error.message);
   }
 }
 

@@ -45,6 +45,15 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+// Set debug logging for route registration
+app.use((req, res, next) => {
+  // Log all incoming requests in development mode
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`${req.method} ${req.originalUrl}`);
+  }
+  next();
+});
+
 // API routes
 app.use('/api', apiRoutes);
 app.use('/api/auth', authRoutes);

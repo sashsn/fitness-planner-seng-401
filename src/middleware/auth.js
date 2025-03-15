@@ -7,6 +7,9 @@ const { User } = require('../models');
 const { AuthError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
+// Get JWT secret from environment or use a default for development
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_not_for_production';
+
 /**
  * Authenticate requests using JWT
  * @param {Object} req - Express request object
@@ -14,6 +17,18 @@ const logger = require('../utils/logger');
  * @param {Function} next - Express next middleware function
  */
 exports.auth = async (req, res, next) => {
+  // Skip auth check in development mode if DEV_SKIP_AUTH=true
+  if (process.env.NODE_ENV === 'development' && process.env.DEV_SKIP_AUTH === 'true') {
+    logger.warn('⚠️ Authentication bypassed in development mode');
+    req.user = { 
+      id: 'dev-user-id',
+      username: 'dev-user',
+      email: 'dev@example.com',
+      isAdmin: true
+    };
+    return next();
+  }
+
   try {
     // Get token from header
     const authHeader = req.header('Authorization');
@@ -26,7 +41,7 @@ exports.auth = async (req, res, next) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     
     // Find the user
     const user = await User.findByPk(decoded.id);

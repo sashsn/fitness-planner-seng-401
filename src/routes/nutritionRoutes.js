@@ -1,6 +1,6 @@
 /**
  * Nutrition Routes
- * Defines API endpoints for nutrition/meal-related operations
+ * Handles nutrition management endpoints
  */
 const express = require('express');
 const nutritionController = require('../controllers/nutritionController');
@@ -8,6 +8,11 @@ const { auth } = require('../middleware/auth');
 const { validateMeal } = require('../middleware/validation');
 
 const router = express.Router();
+
+// Basic placeholder route
+router.get('/', (req, res) => {
+  res.status(200).json({ message: 'Nutrition endpoint placeholder' });
+});
 
 /**
  * @route POST /api/nutrition/meals
