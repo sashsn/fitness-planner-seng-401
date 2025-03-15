@@ -1,55 +1,66 @@
-const fs = require('fs');
+const winston = require('winston');
 const path = require('path');
 
-// Create logs directory if it doesn't exist
-const logsDir = path.join(__dirname, '../../logs');
-if (!fs.existsSync(logsDir)) {
-  try {
-    fs.mkdirSync(logsDir, { recursive: true });
-  } catch (err) {
-    console.error('Failed to create logs directory:', err);
-  }
-}
-
-// Simple logger implementation
-const logger = {
-  info: (message) => {
-    const logMessage = `${new Date().toISOString()} INFO: ${message}`;
-    console.log('\x1b[36m%s\x1b[0m', logMessage); // Cyan color for info
-    appendToLogFile('combined.log', logMessage);
-  },
-  error: (message) => {
-    const logMessage = `${new Date().toISOString()} ERROR: ${message}`;
-    console.error('\x1b[31m%s\x1b[0m', logMessage); // Red color for errors
-    appendToLogFile('error.log', logMessage);
-    appendToLogFile('combined.log', logMessage);
-  },
-  warn: (message) => {
-    const logMessage = `${new Date().toISOString()} WARN: ${message}`;
-    console.warn('\x1b[33m%s\x1b[0m', logMessage); // Yellow color for warnings
-    appendToLogFile('combined.log', logMessage);
-  },
-  debug: (message) => {
-    if (process.env.NODE_ENV !== 'production') {
-      const logMessage = `${new Date().toISOString()} DEBUG: ${message}`;
-      console.debug('\x1b[90m%s\x1b[0m', logMessage); // Gray color for debug
-      appendToLogFile('combined.log', logMessage);
-    }
-  },
-  stream: {
-    write: (message) => {
-      logger.info(message.trim());
-    }
-  }
+// Define log levels
+const levels = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  http: 3,
+  debug: 4,
 };
 
-// Helper function to append to log file
-function appendToLogFile(filename, message) {
-  try {
-    fs.appendFileSync(path.join(logsDir, filename), message + '\n');
-  } catch (err) {
-    console.error(`Failed to write to ${filename}:`, err);
-  }
-}
+// Define log level based on environment
+const level = () => {
+  const env = process.env.NODE_ENV || 'development';
+  const isDevelopment = env === 'development';
+  return isDevelopment ? 'debug' : 'info';
+};
+
+// Define colors for each level
+const colors = {
+  error: 'red',
+  warn: 'yellow',
+  info: 'green',
+  http: 'magenta',
+  debug: 'white',
+};
+
+// Add colors to winston
+winston.addColors(colors);
+
+// Define the format
+const format = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+  winston.format.colorize({ all: true }),
+  winston.format.printf(
+    (info) => `${info.timestamp} ${info.level}: ${info.message}`
+  )
+);
+
+// Define which transports to use
+const transports = [
+  // Console transport
+  new winston.transports.Console(),
+  
+  // Error file transport
+  new winston.transports.File({
+    filename: path.join(__dirname, '../../logs/error.log'),
+    level: 'error',
+  }),
+  
+  // Combined logs file transport
+  new winston.transports.File({ 
+    filename: path.join(__dirname, '../../logs/combined.log') 
+  }),
+];
+
+// Create the logger
+const logger = winston.createLogger({
+  level: level(),
+  levels,
+  format,
+  transports,
+});
 
 module.exports = logger;

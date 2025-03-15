@@ -15,11 +15,13 @@ const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 // Import routes
 const apiRoutes = require('./routes/index');
+const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
 const nutritionRoutes = require('./routes/nutritionRoutes');
 const goalRoutes = require('./routes/goalRoutes');
-const healthRoutes = require('./routes/healthRoutes'); // Add health routes
+const healthRoutes = require('./routes/healthRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
 
@@ -45,11 +47,13 @@ if (process.env.NODE_ENV === 'development') {
 
 // API routes
 app.use('/api', apiRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/nutrition', nutritionRoutes);
 app.use('/api/goals', goalRoutes);
-app.use('/api', healthRoutes); // Register health routes
+app.use('/api/health-check', healthRoutes); // Fix the path here
+app.use('/api/ai', aiRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
