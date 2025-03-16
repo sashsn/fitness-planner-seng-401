@@ -5,6 +5,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const session = require('express-session');
 const morgan = require('morgan');
 const path = require('path');
 const { connectDB } = require('./config/database');
@@ -39,6 +40,18 @@ app.use(express.json({
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Configure session BEFORE any routes that use session
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fitness_planner_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // only secure in production
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  }
+}));
 
 // Development logging
 if (process.env.NODE_ENV === 'development') {

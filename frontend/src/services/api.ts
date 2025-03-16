@@ -20,6 +20,27 @@ interface ApiErrorResponse {
   [key: string]: any;
 }
 
+/**
+ * Helper functions for API data formatting
+ */
+export const formatters = {
+  /**
+   * Format date object to ISO string date (YYYY-MM-DD)
+   */
+  formatDate: (date: Date | null | undefined): string | undefined => {
+    if (!date) return undefined;
+    return date instanceof Date ? date.toISOString().split('T')[0] : undefined;
+  },
+  
+  /**
+   * Ensure value is a number if provided
+   */
+  ensureNumber: (value: string | number | undefined | null): number | undefined => {
+    if (value === null || value === undefined || value === '') return undefined;
+    return typeof value === 'string' ? Number(value) : value;
+  }
+};
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {

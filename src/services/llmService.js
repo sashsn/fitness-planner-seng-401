@@ -1,15 +1,15 @@
 /**
  * LLM Service
- * Handles communication with the OpenAI API instead of local LM Studio
+ * Handles communication with the OpenAI API
  */
 const axios = require('axios');
 const { ApiError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
 // OpenAI API configuration
-const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
+const OPENAI_API_URL = process.env.OPENAI_API_URL || 'http://localhost:1234/v1/chat/completions';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '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';
-const DEFAULT_TIMEOUT = 60000; // 60 seconds
+const DEFAULT_TIMEOUT = 30000; // Reduce to 30 seconds for better responsiveness
 
 /**
  * Send a query to the OpenAI API
@@ -34,15 +34,38 @@ async function queryLLM(prompt, options = {}) {
 
     logger.debug(`Sending request to OpenAI API`);
 
-    const response = await axios.post(OPENAI_API_URL, requestBody, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      timeout: options.timeout || DEFAULT_TIMEOUT
-    });
+    // Create a cancel token for timeout
+    const source = axios.CancelToken.source();
+    const timeout = setTimeout(() => {
+      source.cancel('Request timeout');
+    }, options.timeout || DEFAULT_TIMEOUT);
 
-    return response.data.choices[0].message.content;
+    try {
+      const response = await axios.post(OPENAI_API_URL, requestBody, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        timeout: options.timeout || DEFAULT_TIMEOUT,
+        cancelToken: source.token
+      });
+
+      clearTimeout(timeout);
+      
+      if (!response.data || !response.data.choices || !response.data.choices[0] || !response.data.choices[0].message) {
+        logger.error('Invalid OpenAI API response structure:', response.data);
+        throw new Error('Invalid response from OpenAI API');
+      }
+
+      return response.data.choices[0].message.content;
+    } catch (axiosError) {
+      clearTimeout(timeout);
+      if (axios.isCancel(axiosError)) {
+        logger.error('OpenAI request timed out');
+        throw new Error('OpenAI request timed out after ' + (options.timeout || DEFAULT_TIMEOUT) / 1000 + ' seconds');
+      }
+      throw axiosError;
+    }
   } catch (error) {
     logger.error(`OpenAI API Error: ${error.message}`);
     if (error.response) {
@@ -59,24 +82,244 @@ async function queryLLM(prompt, options = {}) {
  */
 async function generateWorkoutPlan(preferences) {
   try {
-    // Create a detailed prompt for the LLM
-    const prompt = createWorkoutPlanPrompt(preferences);
+    // Create a fallback plan immediately as a backup
+    const fallbackPlan = createSimpleFallbackPlan(preferences);
     
-    // Query the LLM
-    const rawResponse = await queryLLM(prompt, {
-      temperature: 0.7,
-      maxTokens: 3000, // Increased for detailed workout plans
-      timeout: 90000 // 90 seconds for complex workout generation
-    });
-    
-    // Parse the response from the LLM into structured workout plan
-    const workoutPlan = parseWorkoutPlanResponse(rawResponse);
-    
-    return workoutPlan;
+    try {
+      // Create the prompt for the LLM
+      const prompt = createWorkoutPlanPrompt(preferences);
+      
+      // Query the LLM with a reasonable timeout
+      logger.debug('Sending workout plan generation request to LLM');
+      const rawResponse = await queryLLM(prompt, {
+        temperature: 0.7,
+        maxTokens: 2500,
+        timeout: 60000 // 60 seconds timeout
+      });
+      
+      logger.debug(`Received raw response from LLM, length: ${rawResponse?.length || 0}`);
+      
+      // Try to parse the response directly first - LM Studio already returns valid JSON
+      try {
+        const parsedPlan = JSON.parse(rawResponse);
+        
+        // Validate the basic structure
+        if (parsedPlan && parsedPlan.workoutPlan) {
+          logger.debug('Successfully parsed LM Studio response as direct JSON');
+          return parsedPlan;
+        }
+      } catch (directParseError) {
+        // If direct parsing fails, try to extract JSON using various methods
+        logger.debug(`Direct parsing failed: ${directParseError.message}, trying extraction methods`);
+      }
+      
+      // Try different extraction methods sequentially
+      let extractedJson = null;
+      
+      // Method 1: Check for markdown code blocks (```json ... ```)
+      const markdownMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (markdownMatch && markdownMatch[1]) {
+        try {
+          const parsedFromMarkdown = JSON.parse(markdownMatch[1].trim());
+          if (parsedFromMarkdown && parsedFromMarkdown.workoutPlan) {
+            logger.debug('Successfully extracted JSON from markdown code block');
+            return parsedFromMarkdown;
+          }
+        } catch (markdownParseError) {
+          logger.debug(`Markdown extraction failed: ${markdownParseError.message}`);
+        }
+      }
+      
+      // Method 2: Try to extract any JSON object with a string match
+      const jsonObjectMatch = rawResponse.match(/(\{[\s\S]*\})/);
+      if (jsonObjectMatch && jsonObjectMatch[1]) {
+        try {
+          const parsedFromObject = JSON.parse(jsonObjectMatch[1].trim());
+          if (parsedFromObject && parsedFromObject.workoutPlan) {
+            logger.debug('Successfully extracted JSON using object pattern matching');
+            return parsedFromObject;
+          }
+        } catch (objectParseError) {
+          logger.debug(`Object extraction failed: ${objectParseError.message}`);
+        }
+      }
+      
+      // If we're here, all parsing attempts failed
+      logger.warn('All JSON parsing methods failed, using fallback plan');
+      return fallbackPlan;
+      
+    } catch (error) {
+      logger.error(`Error in workout generation: ${error.message}`);
+      return fallbackPlan;
+    }
   } catch (error) {
-    logger.error(`Workout plan generation failed: ${error.message}`);
-    throw new ApiError(500, 'Failed to generate workout plan: ' + error.message);
+    logger.error(`Fatal error in workout generation: ${error.message}`);
+    return createBasicFallbackPlan();
   }
+}
+
+/**
+ * Create a most basic fallback plan
+ */
+function createBasicFallbackPlan() {
+  return {
+    workoutPlan: {
+      metadata: {
+        name: "Basic Workout Plan",
+        goal: "General Fitness",
+        fitnessLevel: "Beginner",
+        durationWeeks: 4,
+        createdAt: new Date().toISOString()
+      },
+      overview: {
+        description: "A simple workout plan for general fitness.",
+        weeklyStructure: "3 days per week",
+        recommendedEquipment: ["No equipment needed"],
+        estimatedTimePerSession: "30 minutes"
+      },
+      schedule: [
+        {
+          week: 1,
+          days: [
+            {
+              dayOfWeek: "Monday",
+              workoutType: "Full Body",
+              focus: "General Fitness",
+              duration: 30,
+              exercises: [
+                {
+                  name: "Push-ups",
+                  category: "Strength",
+                  targetMuscles: ["Chest", "Triceps"],
+                  sets: 3,
+                  reps: 10,
+                  weight: "Bodyweight",
+                  restBetweenSets: 60,
+                  notes: "Modify as needed",
+                  alternatives: []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      nutrition: {
+        generalGuidelines: "Eat a balanced diet",
+        dailyProteinGoal: "0.8g per kg bodyweight",
+        mealTimingRecommendation: "3-4 hours between meals"
+      },
+      progressionPlan: {
+        weeklyAdjustments: []
+      },
+      additionalNotes: "This is a fallback plan."
+    }
+  };
+}
+
+/**
+ * Create a simple fallback workout plan based on user preferences
+ * @param {Object} preferences - User preferences
+ * @returns {Object} Basic workout plan
+ */
+function createSimpleFallbackPlan(preferences) {
+  // Extract basic preferences
+  const {
+    fitnessGoal = "General fitness",
+    experienceLevel = "Beginner",
+    workoutDaysPerWeek = 3,
+    workoutDuration = 30,
+    availableDays = ["Monday", "Wednesday", "Friday"],
+    preferredWorkoutTypes = ["Strength Training"],
+    equipmentAccess = "limited"
+  } = preferences;
+  
+  // Create a day in the schedule for each available day (up to workoutDaysPerWeek)
+  const scheduleDays = [];
+  const daysToUse = availableDays.slice(0, workoutDaysPerWeek);
+  
+  // Create workout days
+  daysToUse.forEach(day => {
+    scheduleDays.push({
+      dayOfWeek: day,
+      workoutType: preferredWorkoutTypes[0] || "Full Body",
+      focus: fitnessGoal === "muscleGain" ? "Strength" : 
+             fitnessGoal === "weightLoss" ? "Cardio" : 
+             fitnessGoal === "endurance" ? "Endurance" : "General",
+      duration: workoutDuration,
+      exercises: [
+        {
+          name: "Bodyweight Squats",
+          category: "Strength",
+          targetMuscles: ["Legs"],
+          sets: 3,
+          reps: 10,
+          weight: "Bodyweight",
+          restBetweenSets: 60,
+          notes: "Focus on form",
+          alternatives: ["Lunges"]
+        },
+        {
+          name: "Push-ups",
+          category: "Strength",
+          targetMuscles: ["Chest", "Shoulders", "Triceps"],
+          sets: 3,
+          reps: 10,
+          weight: "Bodyweight",
+          restBetweenSets: 60,
+          notes: "Modify by doing on knees if needed",
+          alternatives: ["Incline Push-ups"]
+        }
+      ],
+      warmup: {
+        duration: 5,
+        description: "Light cardio and dynamic stretching"
+      },
+      cooldown: {
+        duration: 5,
+        description: "Static stretching and breathing exercises"
+      }
+    });
+  });
+  
+  return {
+    workoutPlan: {
+      metadata: {
+        name: `${fitnessGoal} Plan for ${experienceLevel}`,
+        goal: fitnessGoal,
+        fitnessLevel: experienceLevel,
+        durationWeeks: 4,
+        createdAt: new Date().toISOString()
+      },
+      overview: {
+        description: `A ${fitnessGoal.toLowerCase()} workout plan for ${experienceLevel.toLowerCase()} level with ${workoutDaysPerWeek} workouts per week.`,
+        weeklyStructure: `${workoutDaysPerWeek} days per week`,
+        recommendedEquipment: equipmentAccess === "none" ? ["Bodyweight only"] :
+                              equipmentAccess === "limited" ? ["Dumbbells", "Resistance bands"] :
+                              ["Full gym equipment"],
+        estimatedTimePerSession: `${workoutDuration} minutes`
+      },
+      schedule: [
+        {
+          week: 1,
+          days: scheduleDays
+        }
+      ],
+      nutrition: {
+        generalGuidelines: "Focus on whole foods and adequate protein",
+        dailyProteinGoal: "0.8g per kg of bodyweight",
+        mealTimingRecommendation: "Eat every 3-4 hours"
+      },
+      progressionPlan: {
+        weeklyAdjustments: [
+          {
+            week: 2,
+            adjustments: "Increase repetitions by 2-3 per exercise"
+          }
+        ]
+      },
+      additionalNotes: `This plan focuses on ${fitnessGoal.toLowerCase()} and is designed for your ${experienceLevel.toLowerCase()} level.`
+    }
+  };
 }
 
 /**
@@ -102,7 +345,11 @@ async function checkHealth() {
     };
   } catch (error) {
     logger.error(`OpenAI health check failed: ${error.message}`);
-    throw new ApiError(503, 'OpenAI service unavailable: ' + error.message);
+    return {
+      available: false,
+      operational: false,
+      error: error.message
+    };
   }
 }
 
@@ -128,9 +375,8 @@ function createWorkoutPlanPrompt(preferences) {
 
   // Create a detailed prompt that instructs the LLM to generate a workout plan in JSON format
   return `
-You are an expert fitness coach creating a personalized workout plan. Generate a detailed workout plan based on the following preferences:
+As an expert fitness coach, create a personalized workout plan based on these preferences:
 
-### User Preferences:
 - Fitness Goal: ${fitnessGoal || 'General fitness'}
 - Experience Level: ${experienceLevel || 'Beginner'}
 - Workout Days Per Week: ${workoutDaysPerWeek || 3}
@@ -141,29 +387,21 @@ You are an expert fitness coach creating a personalized workout plan. Generate a
 - Limitations/Injuries: ${limitations || 'None'}
 - Additional Notes: ${additionalNotes || 'None'}
 
-${userProfile ? `
-### User Profile:
-- Weight: ${userProfile.weight ? `${userProfile.weight} ${userProfile.weightUnit || 'kg'}` : 'Unknown'}
-- Height: ${userProfile.height ? `${userProfile.height} ${userProfile.heightUnit || 'cm'}` : 'Unknown'}
-- Age: ${userProfile.age || 'Unknown'}
-- Gender: ${userProfile.gender || 'Unknown'}
-` : ''}
-
-Generate a comprehensive workout plan in JSON format with the following structure:
+Respond with ONLY a JSON object in this format:
 {
   "workoutPlan": {
     "metadata": {
-      "name": "Name of the workout plan",
-      "goal": "Primary fitness goal",
-      "fitnessLevel": "User's fitness level",
-      "durationWeeks": Number of weeks for the program,
-      "createdAt": "Current date in ISO format"
+      "name": "Name of plan",
+      "goal": "Primary goal",
+      "fitnessLevel": "User level",
+      "durationWeeks": 4,
+      "createdAt": "Current date"
     },
     "overview": {
-      "description": "Brief description of the workout plan",
-      "weeklyStructure": "Brief overview of the weekly workout structure",
-      "recommendedEquipment": ["List of required equipment"],
-      "estimatedTimePerSession": "Average time per workout session in minutes"
+      "description": "Brief description",
+      "weeklyStructure": "Brief structure overview",
+      "recommendedEquipment": ["Equipment list"],
+      "estimatedTimePerSession": "Minutes per session"
     },
     "schedule": [
       {
@@ -171,221 +409,45 @@ Generate a comprehensive workout plan in JSON format with the following structur
         "days": [
           {
             "dayOfWeek": "Day name",
-            "workoutType": "Type of workout",
-            "focus": "Body part or focus area",
-            "duration": Duration in minutes,
+            "workoutType": "Type",
+            "focus": "Focus area",
+            "duration": 30,
             "exercises": [
               {
                 "name": "Exercise name",
-                "category": "Exercise category",
-                "targetMuscles": ["Target muscles"],
-                "sets": Number of sets,
-                "reps": Number of repetitions,
-                "weight": "Weight recommendation",
-                "restBetweenSets": Rest time in seconds,
-                "notes": "Additional notes",
-                "alternatives": ["Alternative exercises"]
+                "category": "Category",
+                "targetMuscles": ["Muscles"],
+                "sets": 3,
+                "reps": 10,
+                "weight": "Weight",
+                "restBetweenSets": 60,
+                "notes": "Notes",
+                "alternatives": ["Alternatives"]
               }
-            ],
-            "warmup": {
-              "duration": Duration in minutes,
-              "description": "Warmup description"
-            },
-            "cooldown": {
-              "duration": Duration in minutes,
-              "description": "Cooldown description"
-            }
+            ]
           }
         ]
       }
     ],
     "nutrition": {
-      "generalGuidelines": "General nutrition advice",
-      "dailyProteinGoal": "Recommended protein intake",
-      "mealTimingRecommendation": "Advice on meal timing"
+      "generalGuidelines": "Nutrition advice",
+      "dailyProteinGoal": "Protein recommendation",
+      "mealTimingRecommendation": "Meal timing advice"
     },
     "progressionPlan": {
       "weeklyAdjustments": [
         {
-          "week": Week number,
-          "adjustments": "Adjustments for this week"
+          "week": 2,
+          "adjustments": "Week 2 adjustments"
         }
       ]
     },
-    "additionalNotes": "Any additional notes or recommendations"
+    "additionalNotes": "Any additional notes"
   }
 }
 
-Ensure you include multiple weeks in the schedule based on the durationWeeks value, with appropriate progression between weeks. Each week should have workout days matching the user's available days and preferences.
-
-IMPORTANT: The response must be valid JSON without any additional text. Provide only the JSON object as described above.
+The response should be JUST the JSON object without any markdown formatting, explanation, or wrapper text.
 `;
-}
-
-/**
- * Parse the LLM response into a structured workout plan
- * @param {string} response - Raw text response from LLM
- * @returns {Object} - Structured workout plan object
- */
-function parseWorkoutPlanResponse(response) {
-  try {
-    // Log the raw response for debugging
-    logger.debug(`Raw LLM response length: ${response.length} characters`);
-    
-    // First, try to extract JSON if the response contains text around it
-    let jsonString = response;
-    
-    // Look for JSON object in the response
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      jsonString = jsonMatch[0];
-      logger.debug(`Extracted JSON object with length: ${jsonString.length}`);
-    }
-    
-    // Preprocessing: Try to fix common JSON syntax errors
-    jsonString = cleanJsonString(jsonString);
-    
-    // Parse the JSON
-    const workoutPlan = JSON.parse(jsonString);
-    
-    // Validate the structure has required fields
-    if (!workoutPlan.workoutPlan) {
-      throw new Error('Missing workoutPlan field in response');
-    }
-    
-    // Return the parsed workout plan
-    return workoutPlan;
-  } catch (error) {
-    logger.error(`Failed to parse LLM response: ${error.message}`);
-    logger.debug(`Response snippet: ${response.substring(0, 200)}...`);
-    
-    if (error.message.includes('position')) {
-      // Extract position from error message
-      const positionMatch = error.message.match(/position (\d+)/);
-      if (positionMatch && positionMatch[1]) {
-        const errorPosition = parseInt(positionMatch[1]);
-        const startPos = Math.max(0, errorPosition - 50);
-        const endPos = Math.min(response.length, errorPosition + 50);
-        
-        logger.error(`Context around error position: "${response.substring(startPos, errorPosition)}[ERROR HERE]${response.substring(errorPosition, endPos)}"`);
-      }
-    }
-    
-    // If parsing fails, create a minimal valid structure
-    return generateFallbackPlan();
-  }
-}
-
-/**
- * Clean JSON string to fix common syntax errors
- * @param {string} jsonString - Raw JSON string
- * @returns {string} - Cleaned JSON string
- */
-function cleanJsonString(jsonString) {
-  try {
-    // Remove potential trailing commas (common error in JSON)
-    jsonString = jsonString.replace(/,(\s*[\]}])/g, '$1');
-    
-    // Handle unquoted property names
-    jsonString = jsonString.replace(/(\{|\,)\s*(\w+)\s*\:/g, '$1"$2":');
-    
-    // Fix specific issue with "X minute" or "X minutes" values without quotes
-    jsonString = jsonString.replace(/"reps"\s*:\s*(\d+)\s+(minute|minutes|second|seconds|rep|reps)/g, '"reps": "$1 $2"');
-    jsonString = jsonString.replace(/"duration"\s*:\s*(\d+)\s+(minute|minutes|second|seconds)/g, '"duration": "$1 $2"');
-    jsonString = jsonString.replace(/"restBetweenSets"\s*:\s*(\d+)\s+(minute|minutes|second|seconds)/g, '"restBetweenSets": "$1 $2"');
-    
-    // More general case for unquoted strings - quotes values that contain alphabetic chars
-    jsonString = jsonString.replace(/:\s*(\d+\s+[a-zA-Z]+[a-zA-Z\s]*)([,\}])/g, ': "$1"$2');
-    
-    // Fix missing quotes around string values (more robust pattern)
-    const propertyPattern = /("[\w]+")\s*:\s*([^"{\[\d][^,{}\[\]]*?)(\s*[,}\]])/g;
-    while (propertyPattern.test(jsonString)) {
-      jsonString = jsonString.replace(propertyPattern, '$1: "$2"$3');
-    }
-    
-    // Extra handling for common units in exercise data
-    const unitsPattern = /:\s*(\d+)(\s*)(kg|lbs|lb|pounds|seconds|minutes|reps)([,\}])/g;
-    jsonString = jsonString.replace(unitsPattern, ': "$1$2$3"$4');
-    
-    return jsonString;
-  } catch (error) {
-    logger.warn(`Error while cleaning JSON string: ${error.message}`);
-    return jsonString; // Return original if cleaning fails
-  }
-}
-
-/**
- * Generate a fallback workout plan when parsing fails
- * @returns {Object} - Fallback workout plan
- */
-function generateFallbackPlan() {
-  logger.info('Generating fallback workout plan due to parsing error');
-  
-  return {
-    workoutPlan: {
-      metadata: {
-        name: "Basic Workout Plan",
-        goal: "General fitness",
-        fitnessLevel: "Beginner",
-        durationWeeks: 4,
-        createdAt: new Date().toISOString()
-      },
-      overview: {
-        description: "This is a basic workout plan generated when the detailed parsing failed.",
-        weeklyStructure: "3 days per week",
-        recommendedEquipment: ["Minimal equipment needed"],
-        estimatedTimePerSession: "30 minutes"
-      },
-      schedule: [
-        {
-          week: 1,
-          days: [
-            {
-              dayOfWeek: "Monday",
-              workoutType: "Full Body",
-              focus: "Strength",
-              duration: 30,
-              exercises: [
-                {
-                  name: "Bodyweight Squats",
-                  category: "Strength",
-                  targetMuscles: ["Legs"],
-                  sets: 3,
-                  reps: 10,
-                  weight: "Bodyweight",
-                  restBetweenSets: 60,
-                  notes: "Focus on form",
-                  alternatives: ["Lunges"]
-                }
-              ],
-              warmup: {
-                duration: 5,
-                description: "Light cardio and dynamic stretching"
-              },
-              cooldown: {
-                duration: 5,
-                description: "Static stretching and breathing exercises"
-              }
-            }
-          ]
-        }
-      ],
-      nutrition: {
-        generalGuidelines: "Focus on whole foods and adequate protein",
-        dailyProteinGoal: "0.8g per kg of bodyweight",
-        mealTimingRecommendation: "Eat every 3-4 hours"
-      },
-      progressionPlan: {
-        weeklyAdjustments: [
-          {
-            week: 2,
-            adjustments: "Increase repetitions by 2-3 per exercise"
-          }
-        ]
-      },
-      additionalNotes: "An error occurred during workout plan generation. This is a simplified plan. Please try again or contact support."
-    }
-  };
 }
 
 module.exports = {

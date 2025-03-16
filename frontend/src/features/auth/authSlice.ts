@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import authService from '../../services/authService';
+import * as authService from '../../services/authService';
 import { LoginCredentials, RegisterData } from '../../services/authService';
 
 // Define RootState type since it can't find the module
@@ -45,11 +45,13 @@ const initialState: AuthState = {
 // Register user
 export const register = createAsyncThunk(
   'auth/register',
-  async (userData: RegisterData, thunkAPI) => {
+  async (userData: RegisterData, { rejectWithValue }) => {
     try {
-      return await authService.register(userData);
+      // Call the register function from authService
+      const response = await authService.register(userData);
+      return response;
     } catch (error: any) {
-      return thunkAPI.rejectWithValue(error);
+      return rejectWithValue(error.message);
     }
   }
 );

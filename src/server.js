@@ -6,6 +6,7 @@ const app = require('./app');
 const { connectDB } = require('./config/database');
 const serverConfig = require('./config/server');
 const logger = require('./utils/logger');
+const workoutJobQueue = require('./services/workoutJobQueue');
 
 // Log startup information
 logger.info(`Starting server in ${serverConfig.environment} mode`);
@@ -43,7 +44,38 @@ const startServer = async () => {
     process.on('SIGTERM', () => {
       logger.info('SIGTERM received, shutting down gracefully');
       server.close(() => {
-        logger.info('Process terminated');
+        logger.info('HTTP server closed');
+        
+        // Shutdown the workout job queue
+        workoutJobQueue.shutdown();
+        
+        // Close database connections
+        sequelize.close().then(() => {
+          logger.info('Database connections closed');
+          process.exit(0);
+        }).catch((err) => {
+          logger.error('Error closing database connections:', err);
+          process.exit(1);
+        });
+      });
+    });
+    
+    process.on('SIGINT', () => {
+      logger.info('SIGINT signal received, shutting down gracefully');
+      server.close(() => {
+        logger.info('HTTP server closed');
+        
+        // Shutdown the workout job queue
+        workoutJobQueue.shutdown();
+        
+        // Close database connections
+        sequelize.close().then(() => {
+          logger.info('Database connections closed');
+          process.exit(0);
+        }).catch((err) => {
+          logger.error('Error closing database connections:', err);
+          process.exit(1);
+        });
       });
     });
     

@@ -3,44 +3,115 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     try {
+      console.log('Starting migration: add generatedPlan column to Workouts table');
+      
+      // Check if the table exists
+      try {
+        await queryInterface.describeTable('Workouts');
+      } catch (error) {
+        console.error('Workouts table does not exist:', error.message);
+        console.log('Creating Workouts table...');
+        
+        // Create the table if it doesn't exist
+        await queryInterface.createTable('Workouts', {
+          id: {
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
+            primaryKey: true
+          },
+          name: {
+            type: Sequelize.STRING,
+            allowNull: false
+          },
+          description: {
+            type: Sequelize.TEXT,
+            allowNull: true
+          },
+          date: {
+            type: Sequelize.DATE,
+            allowNull: false,
+            defaultValue: Sequelize.NOW
+          },
+          duration: {
+            type: Sequelize.INTEGER,
+            allowNull: true
+          },
+          caloriesBurned: {
+            type: Sequelize.FLOAT,
+            allowNull: true
+          },
+          workoutType: {
+            type: Sequelize.STRING, // Use STRING instead of ENUM for flexibility
+            allowNull: false,
+            defaultValue: 'other'
+          },
+          isCompleted: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false
+          },
+          intensity: {
+            type: Sequelize.STRING,
+            allowNull: true
+          },
+          notes: {
+            type: Sequelize.TEXT,
+            allowNull: true
+          },
+          UserId: {
+            type: Sequelize.UUID,
+            references: {
+              model: 'Users',
+              key: 'id'
+            },
+            allowNull: true // Allow null for development testing
+          },
+          createdAt: {
+            type: Sequelize.DATE,
+            allowNull: false,
+            defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+          },
+          updatedAt: {
+            type: Sequelize.DATE,
+            allowNull: false,
+            defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+          }
+        });
+        console.log('Workouts table created');
+      }
+      
       // Check if the column already exists to avoid errors
       const tableInfo = await queryInterface.describeTable('Workouts');
       
       // Only add the column if it doesn't exist
       if (!tableInfo.generatedPlan) {
+        console.log('Adding generatedPlan column...');
         await queryInterface.addColumn('Workouts', 'generatedPlan', {
           type: Sequelize.TEXT,
           allowNull: true
         });
+        console.log('generatedPlan column added');
+      } else {
+        console.log('generatedPlan column already exists');
       }
       
-      // Update workoutType ENUM to include 'AI Generated' if not already present
-      try {
-        await queryInterface.sequelize.query(`
-          ALTER TYPE "enum_Workouts_workoutType" ADD VALUE IF NOT EXISTS 'AI Generated'
-        `);
-      } catch (error) {
-        console.error('Error adding ENUM value:', error);
-        // If the above fails, we'll try a different approach for older Postgres versions
-        await queryInterface.changeColumn('Workouts', 'workoutType', {
-          type: Sequelize.ENUM('cardio', 'strength', 'flexibility', 'balance', 'other', 'AI Generated'),
-          allowNull: false,
-          defaultValue: 'other'
-        });
-      }
-      
+      console.log('Migration completed successfully');
       return Promise.resolve();
     } catch (error) {
+      console.error('Migration failed:', error);
       return Promise.reject(error);
     }
   },
 
   down: async (queryInterface, Sequelize) => {
     try {
-      // Remove the column
-      await queryInterface.removeColumn('Workouts', 'generatedPlan');
-      
-      // We can't easily remove an ENUM value in PostgreSQL, so we'll leave it
+      // Only try removing the column if the table exists
+      try {
+        await queryInterface.describeTable('Workouts');
+        // Remove the column if the table exists
+        await queryInterface.removeColumn('Workouts', 'generatedPlan');
+      } catch (error) {
+        console.error('Failed to remove column - table may not exist:', error.message);
+      }
       
       return Promise.resolve();
     } catch (error) {

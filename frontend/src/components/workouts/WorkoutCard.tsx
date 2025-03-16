@@ -69,66 +69,44 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({ workout, onView, onEdit }) =>
           </Typography>
         </Box>
         
-        <Typography 
-          variant="body2" 
-          color="text.secondary" 
-          sx={{ 
-            mb: 2,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}
-        >
-          {workout.description}
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          {workoutPlan?.overview?.description || workout.description}
         </Typography>
         
-        {workoutPlan && (
-          <>
-            <Divider sx={{ my: 1.5 }} />
-            
-            {workoutPlan.metadata && (
-              <Box sx={{ mb: 1.5 }}>
-                <Typography variant="subtitle2" color="primary">
-                  Goal: {workoutPlan.metadata.goal}
-                </Typography>
-                <Typography variant="subtitle2">
-                  Level: {workoutPlan.metadata.fitnessLevel}
-                </Typography>
-              </Box>
-            )}
-            
-            {workoutPlan.overview && (
-              <Typography variant="body2" sx={{ 
-                display: '-webkit-box',
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                {workoutPlan.overview.weeklyStructure}
-              </Typography>
-            )}
-          </>
+        {workoutPlan?.metadata?.fitnessLevel && (
+          <Chip
+            size="small"
+            label={`Level: ${workoutPlan.metadata.fitnessLevel}`}
+            sx={{ mr: 1, mb: 1 }}
+          />
+        )}
+        
+        {workoutPlan?.metadata?.goal && (
+          <Chip
+            size="small"
+            label={`Goal: ${workoutPlan.metadata.goal}`}
+            sx={{ mr: 1, mb: 1 }}
+          />
         )}
       </CardContent>
+      
+      <Divider />
       
       <CardActions>
         {onView && (
           <Button 
-            size="small" 
             startIcon={<VisibilityIcon />}
             onClick={onView}
+            size="small"
           >
-            View
+            View Plan
           </Button>
         )}
         {onEdit && (
-          <Button 
-            size="small"
+          <Button
             startIcon={<EditIcon />}
             onClick={onEdit}
+            size="small"
           >
             Edit
           </Button>

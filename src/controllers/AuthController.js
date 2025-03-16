@@ -112,67 +112,39 @@ const login = async (req, res, next) => {
       });
     }
 
-    // First try to find the user
-    const user = await userService.getUserByEmail(email);
-    
-    if (!user) {
-      logger.warn(`Login failed: No user found with email ${email}`);
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
-    // Log found user details (without password)
-    logger.debug(`User found: ${user.username}, ID: ${user.id}`);
-    
-    // Make sure we have the password field
-    if (!user.password) {
-      logger.error(`User ${email} found but has no password field`);
-      return res.status(500).json({
-        success: false,
-        message: 'Error with user account'
-      });
-    }
-
-    // Check password using bcrypt compare
-    if (!(await user.matchPassword(password))) {
-      logger.warn(`Login failed: Invalid password for user ${email}`);
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-    
-    logger.debug(`Password matched successfully for user ${email}`);
-    
-    // Generate token
-    const token = generateToken(user.id);
-    
-    // Set token in cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Lax'
-    });
-    
-    logger.info(`User ${email} logged in successfully`);
-    
-    // Return successful response with token and user data
-    return res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role
+    try {
+      // Use userService.loginUser
+      const result = await userService.loginUser(email, password);
+      
+      // Check if session is available before setting userId
+      if (req.session) {
+        // Set user ID in session
+        req.session.userId = result.user.id;
+        logger.debug(`Session ID ${req.session.id} created for user ${result.user.id}`);
+      } else {
+        logger.warn('Session object not available - session storage might be misconfigured');
+        // Continue without setting session (will rely on token-based auth)
       }
-    });
+      
+      logger.info(`User ${email} logged in successfully`);
+      
+      // Return successful response with token and user data
+      return res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        token: result.token,
+        user: result.user
+      });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        logger.warn(`Login failed: ${error.message}`);
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message
+        });
+      }
+      throw error;
+    }
   } catch (error) {
     logger.error(`Login error: ${error.message}`);
     return res.status(500).json({

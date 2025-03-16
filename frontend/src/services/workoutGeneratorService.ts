@@ -1,7 +1,6 @@
-import axios from 'axios';
-import { getAuthToken } from './authService';
+import api from './api';
 
-// Define interface for workout preferences
+// Define the interface for workout preferences
 export interface WorkoutPreferences {
   fitnessGoal: string;
   experienceLevel: string;
@@ -10,77 +9,107 @@ export interface WorkoutPreferences {
   availableDays: string[];
   preferredWorkoutTypes: string[];
   equipmentAccess: string;
-  limitations: string;
-  additionalNotes: string;
+  limitations?: string;
+  additionalNotes?: string;
+  userProfile?: {
+    weight?: number;
+    height?: number;
+    age?: number;
+    gender?: string;
+    weightUnit?: string;
+    heightUnit?: string;
+  };
 }
 
 /**
- * Generate a workout plan using OpenAI
- * @param preferences User's workout preferences
- * @returns Generated workout plan
+ * Generate a workout plan based on user preferences
+ * Returns a job ID that can be used to check status
+ * @param preferences User workout preferences
+ * @returns Job ID for tracking the workout generation
  */
-export const generateWorkoutPlan = async (preferences: WorkoutPreferences): Promise<any> => {
+export const generateWorkoutPlan = async (preferences: WorkoutPreferences): Promise<{ jobId: string }> => {
   try {
-    // Use actual API endpoint instead of mocking
-    const token = getAuthToken();
+    // Set a longer timeout for this request
+    const response = await api.post('/ai/workout', preferences, {
+      timeout: 120000, // 2 minute timeout
+    });
     
-    // Configure timeout to prevent long-hanging requests
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      timeout: 60000 // 60 second timeout - increased to allow for LLM processing
-    };
-    
-    console.log('Sending workout generation request to API...');
-    const response = await axios.post('/api/ai/workout', preferences, config);
-    
-    console.log('Received workout plan from API');
+    console.log('Workout generation job started:', response.data);
     return response.data;
   } catch (error: any) {
-    // Log detailed error information
-    console.error('Workout generation error:', error);
-    
-    // Handle error cases with more specific messages
-    if (error.code === 'ECONNABORTED') {
-      throw new Error('Request timed out. The AI service might be overloaded. Please try again later.');
-    } else if (error.code === 'ERR_NETWORK') {
-      throw new Error('Network error. Cannot connect to the server. Please check your internet connection and try again.');
-    } else if (error.response) {
-      // The request was made and the server responded with a status code outside the range of 2xx
-      const statusCode = error.response.status;
-      let errorMessage = error.response.data?.message || 'An error occurred while generating the workout plan';
-      
-      if (statusCode === 429) {
-        errorMessage = 'Too many requests. Please try again later.';
-      } else if (statusCode === 401) {
-        errorMessage = 'Authentication error. Please log in again.';
-      } else if (statusCode === 500) {
-        errorMessage = 'Server error. Our team has been notified. Please try again later.';
-      }
-      
-      throw new Error(errorMessage);
-    } else if (error.request) {
-      // The request was made but no response was received
-      throw new Error('No response from server. Please try again later.');
-    } else {
-      // Something happened in setting up the request
-      throw new Error('Error setting up request: ' + error.message);
-    }
+    console.error('Error generating workout plan:', error);
+    throw new Error(error.message || 'Failed to generate workout plan');
   }
 };
 
 /**
- * Check if the AI service is available
- * @returns Status of the AI service
+ * Check the status of a workout generation job
+ * @param jobId The job ID returned from generateWorkoutPlan
+ * @returns Job status information
  */
-export const checkAIServiceHealth = async (): Promise<boolean> => {
+export const checkJobStatus = async (jobId: string): Promise<{
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress?: number;
+  error?: string;
+}> => {
   try {
-    const response = await axios.get('/api/ai/health', { timeout: 5000 });
-    return response.data?.status === 'OK';
-  } catch (error) {
-    console.error('AI service health check failed:', error);
-    return false;
+    const response = await api.get(`/ai/workout/status/${jobId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error checking job status:', error);
+    throw new Error(error.message || 'Failed to check job status');
+  }
+};
+
+/**
+ * Get the result of a completed workout generation job
+ * @param jobId The job ID
+ * @returns The generated workout plan
+ */
+export const getJobResult = async (jobId: string): Promise<any> => {
+  try {
+    const response = await api.get(`/ai/workout/result/${jobId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error getting job result:', error);
+    throw new Error(error.message || 'Failed to get workout plan result');
+  }
+};
+
+/**
+ * Cancel a workout generation job
+ * @param jobId The job ID to cancel
+ * @returns Status of the cancellation request
+ */
+export const cancelWorkoutGeneration = async (jobId: string): Promise<{success: boolean, message: string}> => {
+  try {
+    const response = await api.delete(`/ai/workout/cancel/${jobId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error canceling job:', error);
+    throw new Error(error.message || 'Failed to cancel workout generation');
+  }
+};
+
+/**
+ * Save a generated workout plan to the user's workouts
+ * @param plan The generated workout plan
+ * @param name Name for the workout plan
+ */
+export const saveWorkoutPlan = async (plan: any, name: string): Promise<any> => {
+  try {
+    const workoutData = {
+      name,
+      description: plan.workoutPlan.overview?.description || 'AI Generated Workout Plan',
+      workoutType: 'AI Generated',
+      date: new Date().toISOString(),
+      generatedPlan: plan
+    };
+    
+    const response = await api.post('/workouts', workoutData);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error saving workout plan:', error);
+    throw new Error(error.message || 'Failed to save workout plan');
   }
 };

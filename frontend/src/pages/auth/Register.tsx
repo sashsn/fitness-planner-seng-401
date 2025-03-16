@@ -39,7 +39,18 @@ const Register: React.FC = () => {
     },
     validationSchema: registerSchema,
     onSubmit: (values) => {
-      dispatch(register(values));
+      // Create a properly formatted data object
+      const registerData = {
+        ...values,
+        // Format date properly
+        dateOfBirth: values.dateOfBirth instanceof Date ? 
+          values.dateOfBirth.toISOString() : values.dateOfBirth,
+        // Ensure height and weight are numbers
+        height: values.height ? Number(values.height) : undefined,
+        weight: values.weight ? Number(values.weight) : undefined,
+      };
+      
+      dispatch(register(registerData));
     },
   });
 

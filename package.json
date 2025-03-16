@@ -11,6 +11,8 @@
     "dev:frontend": "cd frontend && npm start",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:frontend\"",
     "migrate": "node src/scripts/run-migrations.js",
+    "migrate:workout": "node src/scripts/run-workout-migration.js",
+    "migrate:missing": "node src/scripts/run-missing-columns-migration.js",
     "test:workout-gen": "node src/scripts/test-workout-generation.js",
     "test:api": "node src/scripts/test-api-endpoints.js",
     "check:structure": "node src/scripts/check-structure.js"
@@ -26,6 +28,7 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.0",
     "morgan": "^1.10.0",
+    "node-cache": "^5.1.2",
     "openai": "^4.87.3",
     "pg": "^8.13.3",
     "pg-hstore": "^2.3.4",

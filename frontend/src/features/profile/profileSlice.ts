@@ -1,62 +1,68 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import {
-  getUserProfile,
-  updateUserProfile,
-  deleteUserAccount,
-  UserProfile,
-  ProfileUpdateData
-} from '../../services/profileService';
+import * as profileService from '../../services/profileService';
+import { UserProfile } from '../../services/profileService';
 
+// Define the initial state
 interface ProfileState {
   profile: UserProfile | null;
   loading: boolean;
+  success: boolean;
   error: string | null;
 }
 
 const initialState: ProfileState = {
   profile: null,
   loading: false,
-  error: null,
+  success: false,
+  error: null
 };
 
-// Async thunks
+// Async thunks for profile management
 export const fetchProfile = createAsyncThunk(
-  'profile/fetch',
+  'profile/fetchProfile',
   async (_, { rejectWithValue }) => {
     try {
-      const data = await getUserProfile();
-      return data;
+      return await profileService.getProfile();
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch profile');
+      return rejectWithValue(error.message);
     }
   }
 );
 
 export const updateProfile = createAsyncThunk(
-  'profile/update',
-  async (profileData: ProfileUpdateData, { rejectWithValue }) => {
+  'profile/updateProfile',
+  async (profileData: profileService.ProfileUpdateData, { rejectWithValue }) => {
     try {
-      const data = await updateUserProfile(profileData);
-      return data;
+      return await profileService.updateProfile(profileData);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to update profile');
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const changePassword = createAsyncThunk(
+  'profile/changePassword',
+  async (passwordData: profileService.PasswordChangeData, { rejectWithValue }) => {
+    try {
+      return await profileService.changePassword(passwordData);
+    } catch (error: any) {
+      return rejectWithValue(error.message);
     }
   }
 );
 
 export const deleteAccount = createAsyncThunk(
-  'profile/delete',
+  'profile/deleteAccount',
   async (_, { rejectWithValue }) => {
     try {
-      await deleteUserAccount();
-      return true;
+      return await profileService.deleteAccount();
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete account');
+      return rejectWithValue(error.message);
     }
   }
 );
 
-// Profile slice
+// Create the profile slice
 const profileSlice = createSlice({
   name: 'profile',
   initialState,
@@ -64,51 +70,77 @@ const profileSlice = createSlice({
     clearProfileErrors: (state) => {
       state.error = null;
     },
+    resetSuccess: (state) => {
+      state.success = false;
+    }
   },
   extraReducers: (builder) => {
-    // Fetch profile
-    builder.addCase(fetchProfile.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(fetchProfile.fulfilled, (state, action) => {
-      state.profile = action.payload;
-      state.loading = false;
-    });
-    builder.addCase(fetchProfile.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
-
-    // Update profile
-    builder.addCase(updateProfile.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(updateProfile.fulfilled, (state, action) => {
-      state.profile = action.payload;
-      state.loading = false;
-    });
-    builder.addCase(updateProfile.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
-
-    // Delete account
-    builder.addCase(deleteAccount.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(deleteAccount.fulfilled, (state) => {
-      state.profile = null;
-      state.loading = false;
-    });
-    builder.addCase(deleteAccount.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
-  },
+    // Fetch profile reducers
+    builder
+      .addCase(fetchProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProfile.fulfilled, (state, action: PayloadAction<UserProfile>) => {
+        state.loading = false;
+        state.profile = action.payload;
+      })
+      .addCase(fetchProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+    
+    // Update profile reducers
+    builder
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(updateProfile.fulfilled, (state, action: PayloadAction<UserProfile>) => {
+        state.loading = false;
+        state.profile = action.payload;
+        state.success = true;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        state.success = false;
+      });
+    
+    // Change password reducers
+    builder
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false;
+        state.success = true;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        state.success = false;
+      });
+    
+    // Delete account reducers
+    builder
+      .addCase(deleteAccount.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteAccount.fulfilled, (state) => {
+        state.loading = false;
+        state.profile = null;
+      })
+      .addCase(deleteAccount.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+  }
 });
 
-export const { clearProfileErrors } = profileSlice.actions;
+export const { clearProfileErrors, resetSuccess } = profileSlice.actions;
 export default profileSlice.reducer;

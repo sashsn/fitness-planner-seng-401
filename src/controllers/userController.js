@@ -70,8 +70,14 @@ exports.login = async (req, res, next) => {
     const { email, password } = req.body;
     const result = await userService.loginUser(email, password);
     
-    // Set user ID in session
-    req.session.userId = result.user.id;
+    // Check if session is available before accessing it
+    if (req.session) {
+      // Set user ID in session
+      req.session.userId = result.user.id;
+      logger.debug(`Session created for user ${result.user.id}`);
+    } else {
+      logger.warn('Session object not available during login');
+    }
     
     logger.info(`User logged in: ${email}`);
     
@@ -114,9 +120,14 @@ exports.logout = (req, res) => {
 exports.getProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const user = await userService.getUserById(userId);
-    res.status(200).json(user);
+    const userProfile = await userService.getUserProfile(userId);
+    
+    res.status(200).json({
+      success: true,
+      data: userProfile
+    });
   } catch (error) {
+    logger.error(`Error getting user profile: ${error.message}`);
     next(error);
   }
 };
@@ -131,10 +142,46 @@ exports.updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const userData = req.body;
-    const updatedUser = await userService.updateUser(userId, userData);
     
-    res.status(200).json(updatedUser);
+    const updatedUser = await userService.updateUserProfile(userId, userData);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser
+    });
   } catch (error) {
+    logger.error(`Error updating user profile: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * Change user password
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ * @param {Function} next - Next middleware
+ */
+exports.changePassword = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
+    }
+    
+    await userService.updatePassword(userId, currentPassword, newPassword);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    logger.error(`Error changing password: ${error.message}`);
     next(error);
   }
 };
@@ -148,10 +195,43 @@ exports.updateProfile = async (req, res, next) => {
 exports.deleteAccount = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    await userService.deleteUser(userId);
     
-    res.status(204).end();
+    await userService.deleteUserAccount(userId);
+    
+    // Clear session after deleting account
+    req.session.destroy();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
   } catch (error) {
+    logger.error(`Error deleting account: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * Get current user
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ * @param {Function} next - Next middleware
+ */
+exports.getCurrentUser = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: req.user
+    });
+  } catch (error) {
+    logger.error(`Error getting current user: ${error.message}`);
     next(error);
   }
 };

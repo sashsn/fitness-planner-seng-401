@@ -3,9 +3,11 @@
  * Business logic for user-related operations
  */
 const { User } = require('../models');
-          const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { ApiError } = require('../utils/errors');
 const logger = require('../utils/logger');
+const config = require('../config/server');
 
 /**
  * Create a new user
@@ -33,7 +35,7 @@ const createUser = async (userData) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'your_jwt_secret_key',
+      config.jwtSecret,
       { expiresIn: '24h' }
     );
     
@@ -65,9 +67,17 @@ const createUser = async (userData) => {
  */
 const loginUser = async (email, password) => {
   try {
-    const user = await User.findOne({ where: { email } });
+    // Use the new function that includes the password field
+    const user = await getUserByEmailWithPassword(email);
+    
     if (!user) {
       throw new ApiError(401, 'Invalid credentials');
+    }
+    
+    // Check if password field exists
+    if (!user.password) {
+      logger.error(`User ${email} found but has no password field`);
+      throw new ApiError(500, 'User account data is incomplete');
     }
     
     // Use bcrypt to compare passwords
@@ -79,7 +89,7 @@ const loginUser = async (email, password) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'your_jwt_secret_key',
+      config.jwtSecret,
       { expiresIn: '24h' }
     );
     
@@ -110,71 +120,126 @@ const loginUser = async (email, password) => {
  */
 const getUserById = async (userId) => {
   try {
-    const user = await User.findByPk(userId);
+    const user = await User.findByPk(userId, {
+      attributes: { exclude: ['password'] }
+    });
+    
     if (!user) {
       throw new ApiError(404, 'User not found');
     }
     
-    return {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      dateOfBirth: user.dateOfBirth,
-      height: user.height,
-      weight: user.weight,
-      role: user.role,
-      isActive: user.isActive
-    };
+    return user;
   } catch (error) {
-    logger.error('Error getting user:', error);
+    logger.error(`Error getting user by ID ${userId}:`, error);
     throw error;
   }
 };
 
 /**
- * Update user by ID
- * @param {string} userId - User ID
- * @param {Object} userData - Updated user data
- * @returns {Object} Updated user object
+ * Get user by email
+ * @param {string} email - User email
+ * @returns {Object} User object or null
  */
-const updateUser = async (userId, userData) => {
+const getUserByEmail = async (email) => {
+  try {
+    return await User.findOne({ 
+      where: { email },
+      attributes: { exclude: ['password'] }
+    });
+  } catch (error) {
+    logger.error(`Error getting user by email ${email}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get user by email with password (for authentication)
+ * @param {string} email - User email
+ * @returns {Object} User object with password or null
+ */
+const getUserByEmailWithPassword = async (email) => {
+  try {
+    return await User.findOne({ 
+      where: { email }
+      // Note: Not excluding password field
+    });
+  } catch (error) {
+    logger.error(`Error getting user with password by email ${email}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Update user profile
+ * @param {string} userId - User ID
+ * @param {Object} userData - User data to update
+ * @returns {Object} Updated user
+ */
+const updateUserProfile = async (userId, userData) => {
   try {
     const user = await User.findByPk(userId);
+    
     if (!user) {
       throw new ApiError(404, 'User not found');
     }
     
-    // No password hashing - store password directly if it's being updated
+    // Don't allow updating email or password through this function
+    const { email, password, ...updateData } = userData;
     
-    await user.update(userData);
+    await user.update(updateData);
     
-    return {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      dateOfBirth: user.dateOfBirth,
-      height: user.height,
-      weight: user.weight,
-      role: user.role
-    };
+    // Return updated user without password
+    const { password: _, ...updatedUser } = user.get({ plain: true });
+    
+    return updatedUser;
   } catch (error) {
-    logger.error(`Error updating user ${userId}:`, error);
+    logger.error(`Error updating user profile for user ${userId}:`, error);
     throw error;
   }
 };
 
 /**
- * Delete user by ID
+ * Update user password
+ * @param {string} userId - User ID
+ * @param {string} currentPassword - Current password
+ * @param {string} newPassword - New password
+ * @returns {boolean} Success status
+ */
+const updatePassword = async (userId, currentPassword, newPassword) => {
+  try {
+    const user = await User.findByPk(userId);
+    
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+    
+    // Verify current password
+    const isPasswordValid = await user.matchPassword(currentPassword);
+    
+    if (!isPasswordValid) {
+      throw new ApiError(401, 'Current password is incorrect');
+    }
+    
+    // Update with new password
+    user.password = newPassword;
+    await user.save();
+    
+    return true;
+  } catch (error) {
+    logger.error(`Error updating password for user ${userId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Delete user account
  * @param {string} userId - User ID
  * @returns {boolean} Success status
  */
-const deleteUser = async (userId) => {
+const deleteUserAccount = async (userId) => {
   try {
     const user = await User.findByPk(userId);
+    
     if (!user) {
       throw new ApiError(404, 'User not found');
     }
@@ -188,60 +253,66 @@ const deleteUser = async (userId) => {
 };
 
 /**
- * Verify user credentials
- * @param {string} email - User email
- * @param {string} password - User password
- * @returns {boolean} Authentication result
+ * Get user profile with expanded fitness data
+ * @param {string} userId - User ID
+ * @returns {Object} User profile with fitness data
  */
-const verifyCredentials = async (email, password) => {
+const getUserProfile = async (userId) => {
   try {
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return false;
-    }
-    
-    // Direct comparison without bcrypt
-    return password === user.password;
-  } catch (error) {
-    logger.error('Error verifying credentials:', error);
-    return false;
-  }
-};
-
-const getUserByEmail = async (email) => {
-  try {
-    logger.debug(`Searching for user with email: ${email}`);
-    
-    const user = await User.findOne({
-      where: { email },
-      attributes: { include: ['password'] } // Explicitly include password
+    const user = await User.findByPk(userId, {
+      attributes: { 
+        exclude: ['password'] 
+      }
     });
     
-    if (user) {
-      logger.debug(`Found user with email ${email}: ID=${user.id}, username=${user.username}`);
-    } else {
-      logger.debug(`No user found with email: ${email}`);
+    if (!user) {
+      throw new ApiError(404, 'User not found');
     }
     
-    return user;
+    // Calculate additional fitness metrics
+    const userData = user.get({ plain: true });
+    
+    // Calculate BMI if height and weight are present
+    if (userData.height && userData.weight) {
+      const heightInMeters = userData.height / 100; // Convert cm to m
+      userData.bmi = +(userData.weight / (heightInMeters * heightInMeters)).toFixed(1);
+      
+      // Determine BMI category
+      if (userData.bmi < 18.5) userData.bmiCategory = 'Underweight';
+      else if (userData.bmi < 25) userData.bmiCategory = 'Normal weight';
+      else if (userData.bmi < 30) userData.bmiCategory = 'Overweight';
+      else userData.bmiCategory = 'Obesity';
+    }
+    
+    // Calculate age if date of birth is present
+    if (userData.dateOfBirth) {
+      const today = new Date();
+      const birthDate = new Date(userData.dateOfBirth);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      userData.age = age;
+    }
+    
+    return userData;
   } catch (error) {
-    logger.error(`Error finding user by email ${email}: ${error.message}`);
+    logger.error(`Error getting user profile for user ${userId}:`, error);
     throw error;
   }
 };
 
-const getUserByUsername = async (username) => {
-  return await User.findOne({ where: { username } });
-};
-
-// Use CommonJS module exports - consolidate all exports in one object
 module.exports = {
   createUser,
   loginUser,
   getUserById,
-  updateUser,
-  deleteUser,
-  verifyCredentials,
   getUserByEmail,
-  getUserByUsername
+  getUserByEmailWithPassword, // Add this new function to exports
+  updateUserProfile,
+  updatePassword,
+  deleteUserAccount,
+  getUserProfile
 };

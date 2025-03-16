@@ -88,7 +88,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onError }) => {
           password: values.password,
           firstName: values.firstName || undefined,
           lastName: values.lastName || undefined,
-          dateOfBirth: values.dateOfBirth,
+          dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : undefined,
           height: values.height ? Number(values.height) : undefined,
           weight: values.weight ? Number(values.weight) : undefined,
         };

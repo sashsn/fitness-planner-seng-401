@@ -45,17 +45,50 @@ const GeneratedWorkoutDisplay: React.FC<GeneratedWorkoutDisplayProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-  // Check if workoutPlanData is a string (JSON string) and parse it
-  const workoutPlan = typeof workoutPlanData === 'string' 
-    ? JSON.parse(workoutPlanData).workoutPlan 
-    : workoutPlanData.workoutPlan;
+  // Improved validation and error handling when parsing workoutPlan
+  const getWorkoutPlan = () => {
+    if (!workoutPlanData) {
+      console.error('No workout plan data provided');
+      return null;
+    }
 
+    try {
+      if (typeof workoutPlanData === 'string') {
+        const parsed = JSON.parse(workoutPlanData);
+        return parsed.workoutPlan;
+      } else if (workoutPlanData.workoutPlan) {
+        return workoutPlanData.workoutPlan;
+      } else {
+        console.error('Invalid workout plan format:', workoutPlanData);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error parsing workout plan:', error);
+      return null;
+    }
+  };
+  
+  const workoutPlan = getWorkoutPlan();
+
+  // Improved error handling
   if (!workoutPlan) {
     return (
       <Paper elevation={3} sx={{ p: 3 }}>
-        <Typography color="error">
-          Invalid workout plan format. Please try again.
+        <Typography color="error" variant="h6" gutterBottom>
+          Invalid workout plan format
         </Typography>
+        <Typography>
+          The workout plan data is invalid or missing. Please try generating a new plan.
+        </Typography>
+        <Box sx={{ mt: 2 }}>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </Button>
+        </Box>
       </Paper>
     );
   }

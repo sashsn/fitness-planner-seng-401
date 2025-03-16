@@ -1,42 +1,46 @@
-import React, { ReactNode } from 'react';
-import { Box, Typography, Button, Divider } from '@mui/material';
+import React from 'react';
+import { Box, Typography, Button } from '@mui/material';
 
 interface PageHeaderProps {
   title: string;
+  subtitle?: string;
   action?: {
     label: string;
-    icon?: ReactNode;
+    icon?: React.ReactNode;
     onClick: () => void;
   };
-  subtitle?: string;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ title, action, subtitle }) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, action }) => {
   return (
-    <Box sx={{ mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-        <Typography variant="h4" component="h1">
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'flex-start',
+        mb: 3 
+      }}
+    >
+      <Box>
+        <Typography variant="h4" component="h1" gutterBottom>
           {title}
         </Typography>
-        
-        {action && (
-          <Button
-            variant="contained"
-            startIcon={action.icon}
-            onClick={action.onClick}
-          >
-            {action.label}
-          </Button>
+        {subtitle && (
+          <Typography variant="subtitle1" color="text.secondary">
+            {subtitle}
+          </Typography>
         )}
       </Box>
       
-      {subtitle && (
-        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-          {subtitle}
-        </Typography>
+      {action && (
+        <Button 
+          variant="contained" 
+          startIcon={action.icon}
+          onClick={action.onClick}
+        >
+          {action.label}
+        </Button>
       )}
-      
-      <Divider sx={{ mt: 2 }} />
     </Box>
   );
 };
