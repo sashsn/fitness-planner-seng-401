@@ -4,12 +4,16 @@ const { ApiError, logApiError } = require('../utils/errors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const logger = require('../utils/logger');
-const db = require('../models'); // Add this import to fix db not defined error
+const db = require('../models');
+const config = require('../config/server'); // Import server config
 
-// Generate JWT Token
+// Generate JWT Token using the same JWT_SECRET as in auth middleware
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'your_jwt_secret', {
-    expiresIn: '30d'
+  const secret = config.jwtSecret; // Use the same config value as auth middleware
+  logger.debug(`Generating token with secret prefix: ${secret.substring(0, 3)}...`);
+  
+  return jwt.sign({ id }, secret, {
+    expiresIn: config.jwtExpire
   });
 };
 

@@ -289,9 +289,23 @@ function cleanJsonString(jsonString) {
     // Handle unquoted property names
     jsonString = jsonString.replace(/(\{|\,)\s*(\w+)\s*\:/g, '$1"$2":');
     
-    // Fix missing quotes around string values (more complex, attempt with caution)
-    // This is a simplified approach and might not catch all cases
-    jsonString = jsonString.replace(/:(\s*)([a-zA-Z][a-zA-Z0-9\s]*[a-zA-Z0-9])(\s*)(,|}|])/g, ':"$2"$3$4');
+    // Fix specific issue with "X minute" or "X minutes" values without quotes
+    jsonString = jsonString.replace(/"reps"\s*:\s*(\d+)\s+(minute|minutes|second|seconds|rep|reps)/g, '"reps": "$1 $2"');
+    jsonString = jsonString.replace(/"duration"\s*:\s*(\d+)\s+(minute|minutes|second|seconds)/g, '"duration": "$1 $2"');
+    jsonString = jsonString.replace(/"restBetweenSets"\s*:\s*(\d+)\s+(minute|minutes|second|seconds)/g, '"restBetweenSets": "$1 $2"');
+    
+    // More general case for unquoted strings - quotes values that contain alphabetic chars
+    jsonString = jsonString.replace(/:\s*(\d+\s+[a-zA-Z]+[a-zA-Z\s]*)([,\}])/g, ': "$1"$2');
+    
+    // Fix missing quotes around string values (more robust pattern)
+    const propertyPattern = /("[\w]+")\s*:\s*([^"{\[\d][^,{}\[\]]*?)(\s*[,}\]])/g;
+    while (propertyPattern.test(jsonString)) {
+      jsonString = jsonString.replace(propertyPattern, '$1: "$2"$3');
+    }
+    
+    // Extra handling for common units in exercise data
+    const unitsPattern = /:\s*(\d+)(\s*)(kg|lbs|lb|pounds|seconds|minutes|reps)([,\}])/g;
+    jsonString = jsonString.replace(unitsPattern, ': "$1$2$3"$4');
     
     return jsonString;
   } catch (error) {
