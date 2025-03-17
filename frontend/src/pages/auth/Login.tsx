@@ -104,14 +104,19 @@ const Login: React.FC = () => {
 
         {/* Continue as Guest button */}
         <Box sx={{ textAlign: 'center', marginTop: 2 }}>
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={handleGuestLogin}  // Navigate to dashboard as guest
-            sx={{ mt: 1 }}
-          >
-            Continue as Guest
-          </Button>
+        <Button
+  fullWidth
+  variant="contained"
+  color="primary"
+  sx={{ mt: 1, mb: 2 }}
+  onClick={() => {
+    localStorage.setItem('guest', 'true');  // Set guest flag
+    navigate("/dashboard"); // Redirect to dashboard
+  }}
+>
+  Continue as Guest
+</Button>
+
         </Box>
       </form>
     </Box>
