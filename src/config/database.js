@@ -1,18 +1,33 @@
+/**
+ * Database Configuration
+ * Sets up database connection
+ */
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
 const env = require('./env');
 const db = require('../models'); // Import the models object
 
 
-// Use the same Sequelize instance from models/index.js
+// Get database configuration from environment
+const {
+  DB_HOST = 'localhost',
+  DB_PORT = 5432,
+  DB_NAME = 'fitness_planner',
+  DB_USER = 'postgres',
+  DB_PASSWORD = 'root',
+  DB_DIALECT = 'postgres'
+} = process.env;
+
+// Create Sequelize instance with connection pooling
 const sequelize = new Sequelize({
-  dialect: 'postgres',
-  host: env.DB_HOST,
-  port: env.DB_PORT,
-  username: 'postgres', // Hardcoded as requested
-  password: 'O7frfuiq.',     // Hardcoded as requested - changed to 'O7frfuiq.' only for tetsing for me, ben
-  database: 'fitness_planner', // Match exactly the database name from psql output
-  logging: (msg) => logger.debug(msg),
+
+  dialect: DB_DIALECT,
+  host: DB_HOST,
+  port: DB_PORT,
+  database: DB_NAME,
+  username: DB_USER,
+  password: DB_PASSWORD,
+  logging: msg => logger.debug(msg),
   pool: {
     max: 5,
     min: 0,
@@ -21,9 +36,15 @@ const sequelize = new Sequelize({
   }
 });
 
+// Basic models registry to avoid circular dependencies
+const db = {};
+db.sequelize = sequelize;
+db.Sequelize = Sequelize;
+
+// Function to connect to the database
 const connectDB = async () => {
   try {
-
+// this stuff was wokring for the updated db before most recent pull, keeping to ensure just in case - commented out what he had in commit
     await sequelize.authenticate();
     logger.info('PostgreSQL database connection established successfully');
 
@@ -38,10 +59,27 @@ const connectDB = async () => {
     logger.info('Database models synchronized with relaxed validation');
     
     return db.sequelize;
+
+
+    // // For testing purposes, just authenticate without syncing models
+    // await sequelize.authenticate();
+    // logger.info('Database connection established successfully');
+    // return true;
+
+
   } catch (error) {
-    logger.error(`Error connecting to PostgreSQL database: ${error.message}`);
-    process.exit(1);
+    logger.error(`Database connection failed: ${error.message}`);
+    return false;
   }
 };
 
-module.exports = { sequelize: db.sequelize, connectDB };
+// from before most recent pull
+// module.exports = { sequelize: db.sequelize, connectDB };
+
+
+// Create empty placeholder models for now
+db.User = { findByPk: () => Promise.resolve({ id: 'test-user', username: 'test' }) };
+db.Workout = { count: () => Promise.resolve(0) };
+db.Exercise = {};
+
+module.exports = { sequelize, connectDB, ...db };

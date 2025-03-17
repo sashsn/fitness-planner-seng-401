@@ -5,15 +5,67 @@ const logger = require('./logger');
  */
 
 /**
- * Custom API error class that extends Error
+ * Custom error classes for the application
+ */
+
+/**
+ * API Error - used for API-related errors
  */
 class ApiError extends Error {
-  constructor(statusCode, message, errors = []) {
+  /**
+   * Create an API error
+   * @param {number} statusCode - HTTP status code
+   * @param {string} message - Error message
+   */
+  constructor(statusCode, message) {
     super(message);
     this.statusCode = statusCode;
-    this.errors = errors;
-    this.name = this.constructor.name;
+    this.name = 'ApiError';
     Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+/**
+ * Authentication Error - used for auth-related errors
+ */
+class AuthError extends ApiError {
+  /**
+   * Create an authentication error
+   * @param {string} message - Error message
+   */
+  constructor(message = 'Unauthorized') {
+    super(401, message);
+    this.name = 'AuthError';
+  }
+}
+
+/**
+ * Validation Error - used for validation errors
+ */
+class ValidationError extends ApiError {
+  /**
+   * Create a validation error
+   * @param {string} message - Error message
+   * @param {Object} errors - Validation errors
+   */
+  constructor(message = 'Validation failed', errors = {}) {
+    super(400, message);
+    this.name = 'ValidationError';
+    this.errors = errors;
+  }
+}
+
+/**
+ * Not Found Error - used for resource not found errors
+ */
+class NotFoundError extends ApiError {
+  /**
+   * Create a not found error
+   * @param {string} message - Error message
+   */
+  constructor(message = 'Resource not found') {
+    super(404, message);
+    this.name = 'NotFoundError';
   }
 }
 
@@ -31,5 +83,8 @@ const logApiError = (error, req = {}) => {
 
 module.exports = {
   ApiError,
+  AuthError,
+  ValidationError,
+  NotFoundError,
   logApiError
 };

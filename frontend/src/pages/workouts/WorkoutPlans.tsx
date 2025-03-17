@@ -41,7 +41,7 @@ const WorkoutPlans: React.FC = () => {
   const { workouts, loading } = useAppSelector(state => state.workouts);
   const [showDebug, setShowDebug] = useState(process.env.NODE_ENV === 'development');
   
-  // Use useMemo to prevent filtering during every render
+  // Use useMemo to prevent filtering during every render - remove test user filtering
   const generatedWorkouts = useMemo(() => {
     return workouts.filter(workout => {
       const isAIGenerated = 
@@ -49,10 +49,9 @@ const WorkoutPlans: React.FC = () => {
         workout.workoutType?.toLowerCase().includes('ai') ||
         (!!workout.generatedPlan && typeof workout.generatedPlan === 'string' && 
          workout.generatedPlan.length > 10);
-      // Filter out test users and test plans
-      const isTestUser = workout.userId?.startsWith('test-');
-      const isTestPlan = workout.name?.toLowerCase().includes('test');
-      return isAIGenerated && !isTestUser && !isTestPlan;
+      
+      // We're no longer filtering out test users or test plans
+      return isAIGenerated;
     });
   }, [workouts]); // Only recompute when workouts change
   

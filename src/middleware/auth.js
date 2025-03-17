@@ -1,74 +1,84 @@
 /**
  * Authentication Middleware
- * Validates session and adds user to request
+ * Verifies JWT tokens for protected routes
  */
-const { User } = require('../models');
-const { ApiError } = require('../utils/errors');
-const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
+const { User } = require('../models');
+const { AuthError } = require('../utils/errors');
+const logger = require('../utils/logger');
+const config = require('../config/server'); // Import server config
+
+// Get JWT secret from the same config used everywhere
+const JWT_SECRET = config.jwtSecret;
 
 /**
- * Authenticate user by JWT token or session
+ * Authenticate requests using JWT
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
 exports.auth = async (req, res, next) => {
+  // Enable DEV_SKIP_AUTH in development mode to bypass auth
+  if (process.env.NODE_ENV === 'development' && process.env.DEV_SKIP_AUTH === 'true') {
+    logger.warn('⚠️ Authentication bypassed in development mode');
+    req.user = { 
+      id: 'dev-user-id',
+      username: 'dev-user',
+      email: 'dev@example.com',
+      isAdmin: true
+    };
+    return next();
+  }
+
   try {
-    // Check for JWT token in the Authorization header
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        
-        // Check if user exists
-        const user = await User.findByPk(decoded.id);
-        if (!user) {
-          throw new ApiError(401, 'Invalid token - user not found');
-        }
-        
-        // Add user info to request
-        req.user = {
-          id: user.id,
-          email: user.email,
-          role: user.role
-        };
-        
-        return next();
-      } catch (jwtError) {
-        logger.error('JWT verification failed:', jwtError);
-        throw new ApiError(401, 'Invalid or expired token');
-      }
+    // Get token from header
+    const authHeader = req.header('Authorization');
+    const token = authHeader && authHeader.startsWith('Bearer ') 
+      ? authHeader.substring(7) 
+      : null;
+
+    if (!token) {
+      throw new AuthError('No token provided, authorization denied');
+    }
+
+    // Verify token with the same JWT_SECRET used to create it
+    logger.debug(`Verifying token with secret prefix: ${JWT_SECRET.substring(0, 3)}...`);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Find the user
+    const user = await User.findByPk(decoded.id);
+    
+    if (!user) {
+      throw new AuthError('User not found');
     }
     
-    // Fall back to session-based authentication
-    if (req.session.userId) {
-      const user = await User.findByPk(req.session.userId);
-      if (!user) {
-        // Clear invalid session
-        req.session.destroy();
-        throw new ApiError(401, 'User not found');
-      }
-      
-      req.user = {
-        id: user.id,
-        email: user.email,
-        role: user.role
-      };
-      
-      return next();
-    }
-    
-    throw new ApiError(401, 'Authentication required');
+    // Add user to request
+    req.user = user;
+    next();
   } catch (error) {
-    logger.error('Authentication error:', error);
-    next(error);
+    if (error.name === 'JsonWebTokenError') {
+      logger.warn(`Invalid token: ${error.message}`);
+      next(new AuthError('Invalid token'));
+    } else if (error.name === 'TokenExpiredError') {
+      logger.warn(`Token expired: ${error.message}`);
+      next(new AuthError('Token expired, please log in again'));
+    } else {
+      logger.error(`Auth middleware error: ${error.message}`);
+      next(error);
+    }
   }
 };
 
-// Admin authentication middleware remains unchanged
-exports.adminAuth = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    return next();
+/**
+ * Check if the user is an admin
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
+exports.admin = (req, res, next) => {
+  if (req.user && req.user.isAdmin) {
+    next();
+  } else {
+    next(new AuthError('Not authorized as admin'));
   }
-  return next(new ApiError(403, 'Access denied - Admin only'));
 };
