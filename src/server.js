@@ -89,11 +89,17 @@ app.use(errorHandler);
 // Import seedDB in development mode
 const { seedUsers } = process.env.NODE_ENV !== 'production' ? require('./utils/seedDB') : { seedUsers: () => {} };
 
+console.log("here");
 // Start the server with database connection
 const startServer = async () => {
+  console.log("here1");
+
   try {
+    console.log("here2");
+
     await connectDB();
-    
+    console.log("here3");
+
     // Seed the database with test data in development
     if (process.env.NODE_ENV !== 'production') {
       await seedUsers();
