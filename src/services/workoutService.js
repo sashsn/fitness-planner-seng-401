@@ -11,6 +11,14 @@ const { ApiError } = require('../utils/errors');
  * @returns {Object} Created workout
  */
 exports.createWorkout = async (workoutData) => {
+  // Handle generatedPlan data if it exists
+  if (workoutData.generatedPlan) {
+    // Ensure it's stored as a string
+    if (typeof workoutData.generatedPlan !== 'string') {
+      workoutData.generatedPlan = JSON.stringify(workoutData.generatedPlan);
+    }
+  }
+  
   const workout = await Workout.create(workoutData);
   return workout;
 };
@@ -63,6 +71,14 @@ exports.updateWorkout = async (workoutId, userId, workoutData) => {
   
   if (!workout) {
     throw new ApiError(404, 'Workout not found');
+  }
+  
+  // Handle generatedPlan data if it exists
+  if (workoutData.generatedPlan) {
+    // Ensure it's stored as a string
+    if (typeof workoutData.generatedPlan !== 'string') {
+      workoutData.generatedPlan = JSON.stringify(workoutData.generatedPlan);
+    }
   }
   
   await workout.update(workoutData);

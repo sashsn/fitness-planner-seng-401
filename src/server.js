@@ -1,117 +1,57 @@
 /**
- * Server entry point
- * This file starts the Express server
+ * Server Entry Point
  */
 require('dotenv').config();
-const express = require('express');
-const path = require('path');
-const cookieParser = require('cookie-parser');
-const session = require('express-session');
-const cors = require('cors');
-const logger = require('./utils/logger');
+const app = require('./app');
 const { connectDB } = require('./config/database');
+const serverConfig = require('./config/server');
+const logger = require('./utils/logger');
 
-// Create Express app
-const app = express();
+// Log startup information
+logger.info(`Starting server in ${serverConfig.environment} mode`);
+logger.info(`Using LLM API at ${serverConfig.llmApiUrl}`);
 
-// Force port to be 5000 to match frontend expectations
-const PORT = 5000;
-
-console.log(`Server starting on port ${PORT}...`);
-
-// Middleware setup - Fix CORS for proper frontend communication
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
-
-// Add pre-flight response for complex requests
-app.options('*', cors());
-
-// Express JSON configuration with error handling
-app.use(express.json({ 
-  limit: '2mb',
-  verify: (req, res, buf, encoding) => {
-    try {
-      JSON.parse(buf);
-    } catch (e) {
-      console.error('Invalid JSON received');
-      res.status(400).send('Invalid JSON');
-      throw new Error('Invalid JSON');
-    }
-  }
-}));
-
-app.use(express.urlencoded({ extended: true, limit: '2mb' }));
-app.use(cookieParser());
-
-// Session setup
-app.use(session({
-  secret: process.env.JWT_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
-
-// Import routes
-const routes = require('./routes');
-
-// API routes
-app.use('/api', routes);
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    message: 'Server is running'
-  });
-});
-
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/build')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend', 'build', 'index.html'));
-  });
-}
-
-// Error handling middleware
-const { notFound, errorHandler } = require('./middleware/errorHandler');
-app.use(notFound);
-app.use(errorHandler);
-
-// Import seedDB in development mode
-const { seedUsers } = process.env.NODE_ENV !== 'production' ? require('./utils/seedDB') : { seedUsers: () => {} };
-
-// Start the server with database connection
+// Start server
 const startServer = async () => {
   try {
     await connectDB();
     
-    // Seed the database with test data in development
-    if (process.env.NODE_ENV !== 'production') {
-      await seedUsers();
-    }
-    
-    app.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
-      console.log(`Server is running on port ${PORT}`);
+    const server = app.listen(serverConfig.port, () => {
+      logger.info(`Server running on port ${serverConfig.port}`);
+      
+      // List all registered routes (in development mode)
+      if (serverConfig.environment === 'development') {
+        const routes = [];
+        app._router.stack.forEach((middleware) => {
+          if (middleware.route) { // Routes registered directly
+            routes.push(`${Object.keys(middleware.route.methods)[0].toUpperCase()} ${middleware.route.path}`);
+          } else if (middleware.name === 'router') { // Router middleware
+            middleware.handle.stack.forEach((handler) => {
+              const route = handler.route;
+              if (route) {
+                routes.push(`${Object.keys(route.methods)[0].toUpperCase()} ${middleware.path}${route.path}`);
+              }
+            });
+          }
+        });
+        logger.info('Registered routes:');
+        routes.forEach(route => logger.info(`- ${route}`));
+      }
     });
+    
+    // Handle graceful shutdown
+    process.on('SIGTERM', () => {
+      logger.info('SIGTERM received, shutting down gracefully');
+      server.close(() => {
+        logger.info('Process terminated');
+      });
+    });
+    
   } catch (error) {
     logger.error(`Failed to start server: ${error.message}`);
-    console.error(`Failed to start server: ${error.message}`);
     process.exit(1);
   }
 };
 
-// Start the server
 startServer();
-
-module.exports = app;
 
