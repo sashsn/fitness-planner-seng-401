@@ -37,6 +37,10 @@ const Profile: React.FC = () => {
     };
   }, [dispatch]);
 
+  useEffect(() => {
+    console.log("Profile Data:", profile);  // Check if profile data is updated
+  }, [profile]);
+
   const formik = useFormik({
     initialValues: {
       username: profile?.username || '',
@@ -97,26 +101,46 @@ const Profile: React.FC = () => {
         />
       )}
 
+<Box sx={{ p: 2, mb: 2, border: '1px solid #ddd', borderRadius: 2, backgroundColor: '#f9f9f9' }}>
+        <Typography variant="h6">User Information</Typography>
+        {loading ? (
+          <CircularProgress size={24} />
+        ) : profile ? (
+          <>
+            <Typography><strong>Username:</strong> {profile.username}</Typography>
+            <Typography><strong>Email:</strong> {profile.email}</Typography>
+            <Typography><strong>User ID:</strong> {profile.id}</Typography>
+          </>
+        ) : (
+          <Typography color="error">Profile data not available</Typography>
+        )}
+      </Box>
       <Card>
         <CardHeader title="Profile Details" />
         <Divider />
         <CardContent>
           <Box sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
-            <Avatar 
-              sx={{ width: 80, height: 80, fontSize: '2rem', mr: 2 }}
-            >
-              {profile?.firstName?.[0] || profile?.username?.[0] || 'U'}
-            </Avatar>
-            <Box>
-              <Typography variant="h6">
-                {profile?.firstName && profile?.lastName 
-                  ? `${profile.firstName} ${profile.lastName}` 
-                  : profile?.username}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {profile?.email}
-              </Typography>
-            </Box>
+            {loading ? (
+              <CircularProgress />
+            ) : profile ? (
+              <>
+                <Avatar sx={{ width: 80, height: 80, fontSize: '2rem', mr: 2 }}>
+                  {profile.firstName?.[0] || profile.username?.[0] || 'U'}
+                </Avatar>
+                <Box>
+                  <Typography variant="h6">
+                    {profile.firstName && profile.lastName 
+                      ? `${profile.firstName} ${profile.lastName}` 
+                      : profile.username}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {profile.email}
+                  </Typography>
+                </Box>
+              </>
+            ) : (
+              <Typography>Profile data not available</Typography>
+            )}
           </Box>
 
           <form onSubmit={formik.handleSubmit}>
