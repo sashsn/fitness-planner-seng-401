@@ -5,11 +5,10 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const userController = require('../controllers/userController'); // *UPDATE* Import userController
+const { protect } = require('../middleware/authMiddleware'); // *UPDATE* Import middleware to protect routes
 
-// Basic placeholder route
-router.get('/profile', (req, res) => {
-  res.status(200).json({ message: 'User profile endpoint placeholder' });
-});
+router.get('/profile', protect, userController.getProfile); // *UPDATE* Added this route to fetch user data
 
 /**
  * @route POST /api/users/register
