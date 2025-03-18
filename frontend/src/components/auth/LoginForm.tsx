@@ -37,8 +37,13 @@ const Login: React.FC = () => {
   });
 
   const handleGuestLogin = () => {
-    navigate('/dashboard'); 
+    // Set guest flag in localStorage
+    localStorage.setItem('guest', 'true');
+    
+    // Redirect to dashboard for guest user
+    navigate('/dashboard');
   };
+  
 
   return (
     <Box sx={{ width: '100%', maxWidth: 400, mx: 'auto' }}>
