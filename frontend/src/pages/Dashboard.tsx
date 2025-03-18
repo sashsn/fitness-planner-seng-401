@@ -98,7 +98,7 @@ const Dashboard: React.FC = () => {
                   fullWidth 
                   variant="contained" 
                   startIcon={<AddIcon />}
-                  onClick={() => navigate('/nutrition/create')}
+                  onClick={() => navigate('/nutrition/CreateMeal')}
                 >
                   Add Meal
                 </Button>
@@ -118,14 +118,24 @@ const Dashboard: React.FC = () => {
                 Active Goals
               </Typography>
               <Box sx={{ mt: 2 }}>
-                <Button 
-                  fullWidth 
-                  variant="contained" 
-                  startIcon={<AddIcon />}
-                  onClick={() => navigate('/goals/create')}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  component={RouterLink}
+                  to="/goals/CreateGoal"
+                  fullWidth
                 >
                   Add Goal
                 </Button>
+
+                {/* <Button 
+                  fullWidth 
+                  variant="contained" 
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate('/goals/CreateGoal')}
+                >
+                  Add Goal
+                </Button> */}
               </Box>
             </CardContent>
           </Card>

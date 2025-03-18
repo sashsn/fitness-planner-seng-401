@@ -55,7 +55,7 @@ const AuthLoader: React.FC<AuthLoaderProps> = ({ children }) => {
 
   // Show the application if loading completes or timeout occurs
   if (!checkingAuth || timeoutOccurred || isAuthenticated) {
-    console.log("AuthLoader - Rendering children");
+    // console.log("AuthLoader - Rendering children");
     return <>{children}</>;
   }
 
