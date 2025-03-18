@@ -23,16 +23,11 @@ const MainLayout: React.FC = () => {
   };
   
   const handleLogout = () => {
-    // Clear guest flag if set
-    localStorage.removeItem('guest');
-    
-    // Clear user authentication state
-    dispatch(logout()); // Assuming logout removes user data from the store
-  
-    // Navigate to login page
-    navigate('/login');
+    // Properly dispatch the logout action and navigate to login page
+    dispatch(logout());
+    // Force navigation to login page
+    navigate('/login', { replace: true });
   };
-  
   
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -56,6 +51,7 @@ const MainLayout: React.FC = () => {
         position="fixed"
         sx={{
           width: { sm: 'calc(100% - 68px)' },
+          height: 72,
           ml: { sm: '68px' },
           boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
           bgcolor: 'background.paper',
@@ -72,8 +68,12 @@ const MainLayout: React.FC = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Fitness Planner
+          <Typography 
+            variant="h5" 
+            component="div"
+            mx={{flexGrow: 1, textAlign:'left', marginLeft:"15px"}} 
+            sx={{ flexGrow: 1, textAlign:'left', marginLeft:"15px", marginTop:"15px" }}>
+              Fitness Planner
           </Typography>
           
           <IconButton color="inherit">
