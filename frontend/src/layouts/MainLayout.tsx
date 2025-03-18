@@ -72,7 +72,7 @@ const MainLayout: React.FC = () => {
             variant="h5" 
             component="div"
             mx={{flexGrow: 1, textAlign:'left', marginLeft:"15px"}} 
-            sx={{ flexGrow: 1, textAlign:'left', marginLeft:"15px", marginTop:"15px" }}>
+            sx={{ flexGrow: 1, textAlign:'left', marginLeft:"15px"}}>
               Fitness Planner
           </Typography>
           
@@ -82,12 +82,12 @@ const MainLayout: React.FC = () => {
           
           <IconButton 
             onClick={handleProfileMenuOpen}
-            sx={{ ml: 1 }}
+            sx={{ ml: 1, marginTop: 10 }}
           >
             <Avatar 
               alt={username} 
               src={userAvatar} 
-              sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}
+              sx={{ width: 32, height: 32, bgcolor: 'primary.main', marginTop: -10 }}
             >
               {username.charAt(0).toUpperCase()}
             </Avatar>
