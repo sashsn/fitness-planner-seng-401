@@ -80,6 +80,13 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+app.use((req, res, next) => {
+  console.log('Incoming Request:', req.method, req.url);
+  console.log('User:', req.user);  // 
+  next();
+});
+
+
 // Error handling middleware
 app.use(notFound);
 app.use(errorHandler);

@@ -11,7 +11,7 @@ const {
   DB_PORT = 5432,
   DB_NAME = 'fitness_planner',
   DB_USER = 'postgres',
-  DB_PASSWORD = 'root',
+  DB_PASSWORD = 'Sql000',
   DB_DIALECT = 'postgres'
 } = process.env;
 

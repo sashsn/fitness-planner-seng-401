@@ -23,7 +23,7 @@ interface ApiErrorResponse {
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = getToken();
+    const token = getToken();  // Ensure this function retrieves the correct token
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,6 +31,7 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
 
 // Response interceptor to handle token expiration and errors
 api.interceptors.response.use(
