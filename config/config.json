@@ -1,0 +1,24 @@
+{
+    "development": {
+      "username": "postgres",
+      "password": "",
+      "database": "fitness_planner",
+      "host": "127.0.0.1",
+      "dialect": "postgres",
+      "migrationStoragePath": "src/migrations"
+    },
+    "test": {
+      "username": "postgres",
+      "password": "",
+      "database": "fitness_planner_test",
+      "host": "127.0.0.1",
+      "dialect": "postgres"
+    },
+    "production": {
+      "username": "postgres",
+      "password": "",
+      "database": "fitness_planner",
+      "host": "127.0.0.1",
+      "dialect": "postgres"
+    }
+  }
