@@ -20,6 +20,7 @@ import Workouts from './pages/workouts/Workouts';
 import GenerateWorkout from './pages/workouts/GenerateWorkout';
 import WorkoutDetail from './pages/workouts/WorkoutDetail';
 import NotFound from './pages/NotFound';
+import Profile from './pages/Profile';
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -58,7 +59,7 @@ const App: React.FC = () => {
           <Route path="workouts" element={<Workouts />} />
           <Route path="workouts/generate" element={<GenerateWorkout />} />
           <Route path="workouts/:id" element={<WorkoutDetail />} />
-          <Route path="profile" element={<div>Profile Page</div>} />
+          <Route path="profile" element={<Profile />} />
         </Route>
         
         <Route path="*" element={<NotFound />} />
