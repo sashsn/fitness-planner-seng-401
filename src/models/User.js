@@ -60,10 +60,10 @@ module.exports = (sequelize, DataTypes) => {
     return await bcrypt.compare(enteredPassword, this.password);
   };
 
-  // Define associations if needed
+  // Define Associations
   User.associate = (models) => {
-    // Example: User can have many workouts
-    // User.hasMany(models.Workout, { foreignKey: 'userId' });
+    User.hasMany(models.Workout, { onDelete: 'CASCADE' });
+    User.hasMany(models.FitnessGoal, { onDelete: 'CASCADE' });
   };
 
   return User;

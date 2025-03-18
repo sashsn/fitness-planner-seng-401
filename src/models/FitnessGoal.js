@@ -20,16 +20,17 @@ module.exports = (sequelize) => {
       allowNull: true
     },
     goalType: {
-      type: DataTypes.ENUM('weight', 'strength', 'endurance', 'nutrition', 'other'),
+      type: DataTypes.ENUM('weight', 'strength', 'endurance', 'nutrition', 'flexibility', 'mental', 'other'),
       allowNull: false
     },
     targetValue: {
       type: DataTypes.FLOAT,
-      allowNull: true
+      allowNull: false
     },
     currentValue: {
       type: DataTypes.FLOAT,
-      allowNull: true
+      allowNull: true,
+      defaultValue: 0
     },
     unit: {
       type: DataTypes.STRING,
@@ -47,10 +48,35 @@ module.exports = (sequelize) => {
     isCompleted: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
+    },
+    progressHistory: {
+      type: DataTypes.TEXT, // Store progress over time as a JSON string
+      allowNull: true,
+      get() {
+        const rawValue = this.getDataValue('progressHistory');
+        return rawValue ? JSON.parse(rawValue) : [];
+      },
+      set(value) {
+        this.setDataValue('progressHistory', JSON.stringify(value));
+      }
+    },
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     timestamps: true
   });
+
+  // Define associations in the model associate method
+  FitnessGoal.associate = (models) => {
+    FitnessGoal.belongsTo(models.User, {
+      foreignKey: {
+        allowNull: false
+      },
+      onDelete: 'CASCADE'
+    });
+  };
 
   return FitnessGoal;
 };

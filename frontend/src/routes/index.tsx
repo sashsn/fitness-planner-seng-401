@@ -6,6 +6,9 @@ import WorkoutPlans from '../pages/workouts/WorkoutPlans';
 import Dashboard from '../pages/Dashboard';
 import ProtectedRoute from './ProtectedRoute';
 
+import CreateMeal from '../pages/nutrition/CreateMeal';
+
+
 // Create stub components for missing pages
 const Home = () => <div>Home Page</div>;
 const Login = () => <div>Login Page</div>;
@@ -19,6 +22,8 @@ const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        <Route path="/nutrition/CreateMeal" element={<CreateMeal />} />
         
         {/* Protected routes using MainLayout with sidebar */}
         <Route path="/" element={

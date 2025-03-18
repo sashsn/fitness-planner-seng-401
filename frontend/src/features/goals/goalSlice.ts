@@ -144,6 +144,9 @@ const goalSlice = createSlice({
       state.error = null;
     });
     builder.addCase(addGoal.fulfilled, (state, action) => {
+      if (!Array.isArray(state.goals)) {
+        state.goals = []; // Ensure it's an array
+      }
       state.goals.push(action.payload);
       state.loading = false;
     });

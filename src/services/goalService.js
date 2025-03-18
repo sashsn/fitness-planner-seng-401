@@ -11,7 +11,11 @@ const { ApiError } = require('../utils/errors');
  * @returns {Object} Created goal
  */
 exports.createGoal = async (goalData) => {
+  console.log("in creatGoal in goalService");
   const goal = await FitnessGoal.create(goalData);
+
+  console.log("created goal = ", goal)
+
   return goal;
 };
 

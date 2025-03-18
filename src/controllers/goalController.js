@@ -12,8 +12,11 @@ const goalService = require('../services/goalService');
  */
 exports.createGoal = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.params.id;
     const goalData = { ...req.body, UserId: userId };
+
+    console.log("in goal controller - create goal");
+
     const goal = await goalService.createGoal(goalData);
     res.status(201).json(goal);
   } catch (error) {
@@ -29,7 +32,7 @@ exports.createGoal = async (req, res, next) => {
  */
 exports.getUserGoals = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.params.id;
     const goals = await goalService.getGoalsByUserId(userId);
     res.status(200).json(goals);
   } catch (error) {

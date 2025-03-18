@@ -20,12 +20,20 @@ export interface GoalProgress {
   remainingDays?: number;
 }
 
+const getUserId = (): string | null => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  return user?.id || null;
+};
+
 /**
  * Get all fitness goals for the current user
  * @returns Promise with array of fitness goals
  */
 export const getUserGoals = async (): Promise<FitnessGoal[]> => {
-  const response = await api.get('/goals');
+  const userId = getUserId();
+  if (!userId) throw new Error("User ID not found. Please log in.");
+
+  const response = await api.get(`/goals/${userId}`);
   return response.data;
 };
 
@@ -35,6 +43,7 @@ export const getUserGoals = async (): Promise<FitnessGoal[]> => {
  * @returns Promise with goal data
  */
 export const getGoalById = async (id: string): Promise<FitnessGoal> => {
+
   const response = await api.get(`/goals/${id}`);
   return response.data;
 };
@@ -44,7 +53,10 @@ export const getGoalById = async (id: string): Promise<FitnessGoal> => {
  * @param goalData Goal data
  * @returns Promise with created goal
  */
-export const createGoal = async (goalData: FitnessGoal): Promise<FitnessGoal> => {
+export const createGoal = async ( goalData: FitnessGoal): Promise<FitnessGoal> => {
+  const userId = getUserId();
+  if (!userId) throw new Error("User ID not found. Please log in.");
+
   const formattedData = {
     ...goalData,
     startDate: goalData.startDate instanceof Date 
@@ -54,8 +66,9 @@ export const createGoal = async (goalData: FitnessGoal): Promise<FitnessGoal> =>
       ? formatISO(goalData.targetDate) 
       : goalData.targetDate
   };
-  
-  const response = await api.post('/goals', formattedData);
+  console.log("tetsing create goal");
+  const response = await api.post(`/goals/${userId}`, formattedData);
+  console.log("creating goal res: ", response);
   return response.data;
 };
 

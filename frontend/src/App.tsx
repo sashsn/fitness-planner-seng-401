@@ -21,6 +21,10 @@ import GenerateWorkout from './pages/workouts/GenerateWorkout';
 import WorkoutDetail from './pages/workouts/WorkoutDetail';
 import NotFound from './pages/NotFound';
 
+import Goals from './pages/goals/Goals';
+import EditGoal from './pages/goals/EditGoal';
+import CreateGoal from './pages/goals/CreateGoal';
+
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAppSelector(state => state.auth);
@@ -58,6 +62,13 @@ const App: React.FC = () => {
           <Route path="workouts" element={<Workouts />} />
           <Route path="workouts/generate" element={<GenerateWorkout />} />
           <Route path="workouts/:id" element={<WorkoutDetail />} />
+          
+
+          {/* will need to add paths for all potential paths from the dashboard to this file */}
+          <Route path="/goals/CreateGoal" element={<CreateGoal />} />
+          <Route path="/goals/EditGoal" element={<EditGoal />} />
+          <Route path="/goals/Goals" element={<Goals />} />
+
           <Route path="profile" element={<div>Profile Page</div>} />
         </Route>
         
