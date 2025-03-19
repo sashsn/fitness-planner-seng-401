@@ -171,16 +171,7 @@ const MobileMenuDropdown: React.FC<{
           }
         })}
         <Divider />
-        <MenuItem
-          onClick={() => {
-            onLogout();
-            handleMainClose();
-          }}
-          sx={{ color: 'error.main' }}
-        >
-          <LogoutIcon />
-          <Typography variant="caption" sx={{ ml: 1 }}>Logout</Typography>
-        </MenuItem>
+        
       </Menu>
     </Fragment>
   );
@@ -551,32 +542,7 @@ const ExpandableSidebar: React.FC<ExpandableSidebarProps> = ({
 
       <Divider />
 
-      <List sx={{ px: 1, pb: 1 }}>
-        <Tooltip title={isOpenNow ? '' : "Logout"} placement="right">
-          <ListItem disablePadding>
-            <ListItemButton
-              onClick={handleLogoutClick}
-              sx={{
-                borderRadius: '8px',
-                justifyContent: isOpenNow ? 'initial' : 'center',
-                px: 2.5,
-                color: theme.palette.error.main,
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  mr: isOpenNow ? 2 : 'auto',
-                  color: theme.palette.error.main,
-                }}
-              >
-                <LogoutIcon />
-              </ListItemIcon>
-              {isOpenNow && <ListItemText primary="Logout" />}
-            </ListItemButton>
-          </ListItem>
-        </Tooltip>
-      </List>
+     
     </Box>
   );
 
