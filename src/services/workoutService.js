@@ -41,12 +41,11 @@ exports.getWorkoutsByUserId = async (userId) => {
 /**
  * Get a specific workout by ID
  * @param {string} workoutId - Workout ID
- * @param {string} userId - User ID
  * @returns {Object} Workout data
  */
-exports.getWorkoutById = async (workoutId, userId) => {
+exports.getWorkoutById = async (workoutId) => {
   const workout = await Workout.findOne({
-    where: { id: workoutId, UserId: userId },
+    where: { id: workoutId },
     include: [{ model: Exercise }]
   });
   
@@ -60,13 +59,12 @@ exports.getWorkoutById = async (workoutId, userId) => {
 /**
  * Update a workout
  * @param {string} workoutId - Workout ID
- * @param {string} userId - User ID
  * @param {Object} workoutData - Updated workout data
  * @returns {Object} Updated workout
  */
-exports.updateWorkout = async (workoutId, userId, workoutData) => {
+exports.updateWorkout = async (workoutId, workoutData) => {
   const workout = await Workout.findOne({
-    where: { id: workoutId, UserId: userId }
+    where: { id: workoutId }
   });
   
   if (!workout) {
@@ -94,12 +92,11 @@ exports.updateWorkout = async (workoutId, userId, workoutData) => {
 /**
  * Delete a workout
  * @param {string} workoutId - Workout ID
- * @param {string} userId - User ID
  * @returns {boolean} Success status
  */
-exports.deleteWorkout = async (workoutId, userId) => {
+exports.deleteWorkout = async (workoutId) => {
   const workout = await Workout.findOne({
-    where: { id: workoutId, UserId: userId }
+    where: { id: workoutId }
   });
   
   if (!workout) {
@@ -117,14 +114,13 @@ exports.deleteWorkout = async (workoutId, userId) => {
 /**
  * Add an exercise to a workout
  * @param {string} workoutId - Workout ID
- * @param {string} userId - User ID
  * @param {Object} exerciseData - Exercise data
  * @returns {Object} Created exercise
  */
-exports.addExerciseToWorkout = async (workoutId, userId, exerciseData) => {
+exports.addExerciseToWorkout = async (workoutId, exerciseData) => {
   // Check if the workout exists and belongs to the user
   const workout = await Workout.findOne({
-    where: { id: workoutId, UserId: userId }
+    where: { id: workoutId }
   });
   
   if (!workout) {

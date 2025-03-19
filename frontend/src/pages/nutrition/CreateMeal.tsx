@@ -55,7 +55,7 @@ const CreateMeal: React.FC = () => {
       );
 
       if (addMeal.fulfilled.match(result)) {
-        navigate('/nutrition');
+        navigate('/nutrition/Nutrition');
       }
     },
   });
@@ -217,7 +217,7 @@ const CreateMeal: React.FC = () => {
               <Button
                 type="button"
                 variant="outlined"
-                onClick={() => navigate('/nutrition')}
+                onClick={() => navigate('/nutrition/Nutrition')}
                 sx={{ mr: 1 }}
                 disabled={loading}
               >

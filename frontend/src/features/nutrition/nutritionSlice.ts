@@ -146,6 +146,9 @@ const nutritionSlice = createSlice({
       state.error = null;
     });
     builder.addCase(addMeal.fulfilled, (state, action) => {
+      if (!Array.isArray(state.meals)) {
+        state.meals = []; // Ensure it's an array
+      }
       state.meals.push(action.payload);
       state.loading = false;
     });

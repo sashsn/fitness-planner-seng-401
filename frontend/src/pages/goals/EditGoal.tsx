@@ -44,6 +44,8 @@ const EditGoal: React.FC = () => {
     };
   }, [dispatch, id]);
 
+
+
   const formik = useFormik({
     initialValues: {
       name: currentGoal?.name || '',
@@ -73,7 +75,7 @@ const EditGoal: React.FC = () => {
         );
 
         if (editGoal.fulfilled.match(result)) {
-          navigate('/goals');
+          navigate('/goals/Goals');
         }
       }
     },
@@ -82,6 +84,8 @@ const EditGoal: React.FC = () => {
   if (loading && !currentGoal) {
     return <LoadingSpinner />;
   }
+
+  
 
   return (
     <>
@@ -248,9 +252,12 @@ const EditGoal: React.FC = () => {
                     <Switch
                       id="isCompleted"
                       name="isCompleted"
-                      checked={formik.values.isCompleted}
-                      onChange={formik.handleChange}
+                      // checked={formik.values.isCompleted}
+                      // onChange={formik.handleChange}
                       disabled={loading}
+                      checked={formik.values.isCompleted}
+                    // FIX 3: Use a custom onChange handler for Switch to properly update Formik state
+                      onChange={(e) => formik.setFieldValue('isCompleted', e.target.checked)}
                     />
                   }
                   label="Mark as completed"
@@ -262,7 +269,7 @@ const EditGoal: React.FC = () => {
               <Button
                 type="button"
                 variant="outlined"
-                onClick={() => navigate('/goals')}
+                onClick={() => navigate('/goals/Goals')}
                 sx={{ mr: 1 }}
                 disabled={loading}
               >

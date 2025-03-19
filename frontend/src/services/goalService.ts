@@ -44,7 +44,7 @@ export const getUserGoals = async (): Promise<FitnessGoal[]> => {
  */
 export const getGoalById = async (id: string): Promise<FitnessGoal> => {
 
-  const response = await api.get(`/goals/${id}`);
+  const response = await api.get(`/goals/getGoal/${id}`);
   return response.data;
 };
 
@@ -66,9 +66,7 @@ export const createGoal = async ( goalData: FitnessGoal): Promise<FitnessGoal> =
       ? formatISO(goalData.targetDate) 
       : goalData.targetDate
   };
-  console.log("tetsing create goal");
   const response = await api.post(`/goals/${userId}`, formattedData);
-  console.log("creating goal res: ", response);
   return response.data;
 };
 

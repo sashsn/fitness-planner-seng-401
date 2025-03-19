@@ -37,13 +37,23 @@ export interface NutritionSummary {
   }>;
 }
 
+
+const getUserId = (): string | null => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  return user?.id || null;
+};
+
+
 /**
  * Get all meals for the current user
  * @returns Promise with array of meals
  */
 export const getUserMeals = async (): Promise<Meal[]> => {
-  const response = await api.get('/nutrition/meals');
-  return response.data;
+  const userId = getUserId();
+  if (!userId) throw new Error("User ID not found. Please log in.");
+
+  const response = await api.get(`/nutrition/meals/${userId}`);
+  return response.data.data;
 };
 
 /**
@@ -52,8 +62,9 @@ export const getUserMeals = async (): Promise<Meal[]> => {
  * @returns Promise with meal data
  */
 export const getMealById = async (id: string): Promise<Meal> => {
-  const response = await api.get(`/nutrition/meals/${id}`);
-  return response.data;
+  const response = await api.get(`/nutrition/meals/getMealId/${id}`);
+  console.log("get meal by ID, ", response.data);
+  return response.data.data;
 };
 
 /**
@@ -62,6 +73,9 @@ export const getMealById = async (id: string): Promise<Meal> => {
  * @returns Promise with created meal
  */
 export const createMeal = async (mealData: Meal): Promise<Meal> => {
+  const userId = getUserId();
+  if (!userId) throw new Error("User ID not found. Please log in.");
+
   const formattedData = {
     ...mealData,
     date: mealData.date instanceof Date 
@@ -69,7 +83,7 @@ export const createMeal = async (mealData: Meal): Promise<Meal> => {
       : mealData.date
   };
   
-  const response = await api.post('/nutrition/meals', formattedData);
+  const response = await api.post(`/nutrition/meals/${userId}`, formattedData);
   return response.data;
 };
 
@@ -114,6 +128,10 @@ export const getNutritionSummary = async (
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
 
-  const response = await api.get(`/nutrition/summary?${params.toString()}`);
+  const userId = getUserId();
+  if (!userId) throw new Error("User ID not found. Please log in.");
+  if (userId) params.append('userId', userId);
+
+  const response = await api.get(`/nutrition/summary/${params.toString()}`);
   return response.data;
 };

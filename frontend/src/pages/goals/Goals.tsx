@@ -146,19 +146,22 @@ const Goals: React.FC = () => {
                       </Grid>
                     </Grid>
                     
-                    <Box sx={{ mt: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2">Progress</Typography>
-                        <Typography variant="body2">
-                          {goal.currentValue} / {goal.targetValue} {goal.unit}
-                        </Typography>
+                    
+                    {!goal.isCompleted && (
+                      <Box sx={{ mt: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2">Progress</Typography>
+                          <Typography variant="body2">
+                            {goal.currentValue} / {goal.targetValue} {goal.unit}
+                          </Typography>
+                        </Box>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={Math.min(progress, 100)} 
+                          sx={{ mt: 1, height: 8, borderRadius: 1 }} 
+                        />
                       </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={Math.min(progress, 100)} 
-                        sx={{ mt: 1, height: 8, borderRadius: 1 }} 
-                      />
-                    </Box>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>

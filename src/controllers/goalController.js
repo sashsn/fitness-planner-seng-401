@@ -15,8 +15,6 @@ exports.createGoal = async (req, res, next) => {
     const userId = req.params.id;
     const goalData = { ...req.body, UserId: userId };
 
-    console.log("in goal controller - create goal");
-
     const goal = await goalService.createGoal(goalData);
     res.status(201).json(goal);
   } catch (error) {
@@ -48,9 +46,8 @@ exports.getUserGoals = async (req, res, next) => {
  */
 exports.getGoalById = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    const goal = await goalService.getGoalById(id, userId);
+    const id  = req.params.id;
+    const goal = await goalService.getGoalById(id);
     res.status(200).json(goal);
   } catch (error) {
     next(error);
@@ -65,10 +62,9 @@ exports.getGoalById = async (req, res, next) => {
  */
 exports.updateGoal = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
+    const  id  = req.params.id;
     const goalData = req.body;
-    const updatedGoal = await goalService.updateGoal(id, userId, goalData);
+    const updatedGoal = await goalService.updateGoal(id, goalData);
     res.status(200).json(updatedGoal);
   } catch (error) {
     next(error);
@@ -82,10 +78,10 @@ exports.updateGoal = async (req, res, next) => {
  * @param {Function} next - Express next middleware function
  */
 exports.deleteGoal = async (req, res, next) => {
+
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    await goalService.deleteGoal(id, userId);
+    const id = req.params.id;
+    await goalService.deleteGoal(id);
     res.status(204).end();
   } catch (error) {
     next(error);
