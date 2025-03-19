@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/reduxHooks';
 
@@ -7,36 +7,22 @@ interface ProtectedRouteProps {
 }
 
 /**
- * Route guard that only allows authenticated users
+ * Route guard that only allows authenticated users or guests
  */
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const auth = useAppSelector(state => state.auth);
-  const { isAuthenticated, isLoading, checkingAuth, user } = auth;
-  
-  // Debug authentication state
-  useEffect(() => {
-    console.log('ProtectedRoute - Auth State:', {
-      isAuthenticated,
-      isLoading,
-      checkingAuth,
-      hasUser: !!user
-    });
-  }, [isAuthenticated, isLoading, checkingAuth, user]);
-  
-  // Show nothing while checking auth status
-  if (isLoading || checkingAuth) {
-    console.log('ProtectedRoute - Still loading, showing nothing');
+  const { isAuthenticated, isLoading } = auth;
+
+  // If still loading, show nothing
+  if (isLoading) {
     return null;
   }
-  
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
-    console.log('ProtectedRoute - Not authenticated, redirecting to login');
+
+  // Check if user is authenticated or is a guest
+  if (!isAuthenticated && !localStorage.getItem('guest')) {
     return <Navigate to="/login" replace />;
   }
-  
-  // Render children if authenticated
-  console.log('ProtectedRoute - User authenticated, rendering children');
+
   return <>{children}</>;
 };
 

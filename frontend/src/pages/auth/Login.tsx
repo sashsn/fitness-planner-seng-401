@@ -9,14 +9,15 @@ import {
   Typography,
   CircularProgress,
 } from '@mui/material';
-import { loginSchema } from '../../utils/validation';
 import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
 import { clearErrors, login } from '../../features/auth/authSlice';
 import AlertMessage from '../../components/ui/AlertMessage';
+import { useNavigate } from 'react-router-dom';  // Import useNavigate for guest navigation
 
 const Login: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.auth);
+  const navigate = useNavigate();  // Initialize navigate for guest login
 
   useEffect(() => {
     return () => {
@@ -29,14 +30,18 @@ const Login: React.FC = () => {
       email: '',
       password: '',
     },
-    validationSchema: loginSchema,
     onSubmit: (values) => {
       dispatch(login(values));
     },
   });
 
+  // Handle "Continue as Guest"
+  const handleGuestLogin = () => {
+    navigate('/dashboard?guest=true');  // Navigate to the dashboard page as a guest
+  };
+
   return (
-    <Box sx={{ width: '100%', maxWidth: 400, mx: 'auto' }}>
+    <Box sx={{ mt: 2, width: '100%', maxWidth: 400, mx: 'auto' }}>
       <Typography component="h1" variant="h5" align="center" gutterBottom>
         Sign In
       </Typography>
@@ -53,7 +58,6 @@ const Login: React.FC = () => {
       <form onSubmit={formik.handleSubmit} noValidate>
         <TextField
           margin="normal"
-          required
           fullWidth
           id="email"
           label="Email Address"
@@ -69,7 +73,6 @@ const Login: React.FC = () => {
         />
         <TextField
           margin="normal"
-          required
           fullWidth
           name="password"
           label="Password"
@@ -97,6 +100,23 @@ const Login: React.FC = () => {
           <Link component={RouterLink} to="/register" variant="body2">
             {"Don't have an account? Sign Up"}
           </Link>
+        </Box>
+
+        {/* Continue as Guest button */}
+        <Box sx={{ textAlign: 'center', marginTop: 2 }}>
+        <Button
+  fullWidth
+  variant="contained"
+  color="primary"
+  sx={{ mt: 1, mb: 2 }}
+  onClick={() => {
+    localStorage.setItem('guest', 'true');  // Set guest flag
+    navigate("/dashboard"); // Redirect to dashboard
+  }}
+>
+  Continue as Guest
+</Button>
+
         </Box>
       </form>
     </Box>

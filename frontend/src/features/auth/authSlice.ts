@@ -78,11 +78,17 @@ export const checkAuth = createAsyncThunk(
   }
 );
 
-// Logout user
 export const logout = createAsyncThunk(
   'auth/logout',
-  async () => {
-    await authService.logout();
+  async (_, thunkAPI) => {
+    try {
+      await authService.logout();
+      // Clear the user data from localStorage
+      localStorage.removeItem('user');
+      return true; // To indicate successful logout
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
   }
 );
 
@@ -153,6 +159,8 @@ export const authSlice = createSlice({
     builder.addCase(logout.fulfilled, (state) => {
       state.isAuthenticated = false;
       state.user = null;
+      // Optionally reset any additional user data (like session-related info)
+      state.checkingAuth = false;
     });
   }
 });

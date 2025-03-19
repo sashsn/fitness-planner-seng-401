@@ -51,6 +51,7 @@ const MainLayout: React.FC = () => {
         position="fixed"
         sx={{
           width: { sm: 'calc(100% - 68px)' },
+          height: 72,
           ml: { sm: '68px' },
           boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
           bgcolor: 'background.paper',
@@ -67,8 +68,12 @@ const MainLayout: React.FC = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Fitness Planner
+          <Typography 
+            variant="h5" 
+            component="div"
+            mx={{flexGrow: 1, textAlign:'left', marginLeft:"15px"}} 
+            sx={{ flexGrow: 1, textAlign:'left', marginLeft:"15px"}}>
+              Fitness Planner
           </Typography>
           
           <IconButton color="inherit">
@@ -77,12 +82,12 @@ const MainLayout: React.FC = () => {
           
           <IconButton 
             onClick={handleProfileMenuOpen}
-            sx={{ ml: 1 }}
+            sx={{ ml: 1, marginTop: 10 }}
           >
             <Avatar 
               alt={username} 
               src={userAvatar} 
-              sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}
+              sx={{ width: 32, height: 32, bgcolor: 'primary.main', marginTop: -10 }}
             >
               {username.charAt(0).toUpperCase()}
             </Avatar>
