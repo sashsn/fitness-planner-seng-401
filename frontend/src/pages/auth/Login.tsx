@@ -58,19 +58,55 @@ const Login: React.FC = () => {
         justifyContent: 'center',
       }}
     >
-    <Box
-      sx={{
-        background: "white", 
-        backdropFilter: "blur(4px)", 
-        p: 2, 
-        width: '100%',
-        maxWidth: 400,
-        mx: 'auto', 
-        borderRadius: '8px' 
-      }}
-    >
-      <Typography component="h1" variant="h5" align="center" gutterBottom>
-        Sign In
+      
+      {/* Login form container */}
+      <Box
+        sx={{
+          background: "white",
+          backdropFilter: "blur(4px)",
+          pt: "120px", 
+          pb: 2,
+          px: 2,
+          width: "100%",
+          maxWidth: 400,
+          mx: "auto",
+          borderRadius: "8px",
+          position: "relative", 
+        }}
+      >
+        {/* Logo positioned inside the form */}
+        <Box
+          component="img"
+          src="/logo.png"
+          alt="Logo Text"
+          sx={{
+            position: "absolute",
+            top: "10px", // adjust this to control the vertical placement of the logo
+            left: "50%",
+            transform: "translateX(-50%)",
+            maxWidth: "90%",
+            height: "auto",
+            zIndex: 0,
+          }}
+        />
+        <Typography
+          component="h1"
+          variant="h5"
+          align="center"
+          gutterBottom
+          sx={{
+            display: "inline-block",  
+            px: 2,                 
+            borderRadius: "8px",
+            boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.3)",
+            background: "white",
+            position: "relative",
+            zIndex: 1, 
+            mt: "-30px",            
+            ml: "36%",              
+          }}
+        >
+          Sign In
       </Typography>
 
       {error && (
