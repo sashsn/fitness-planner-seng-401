@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
 import { fetchWorkouts } from '../../features/workouts/workoutSlice';
@@ -33,15 +33,21 @@ const Workouts: React.FC = () => {
       <PageHeader 
         title="Workouts" 
         subtitle="Manage your workout routines"
-        action={{
-          label: 'Add Workout',
-          icon: <AddIcon />,
-          onClick: handleAddWorkout
-        }}
       />
 
-      {/* Workouts list would be rendered here */}
       <Box>
+        <Button sx= {{justifyContent: 'center', display: 'flex' ,ml: 'auto', mr: 'auto', mt: -1}}
+          variant="contained"
+          color='primary'
+          startIcon={<AddIcon />}  
+          onClick={handleAddWorkout}
+        >
+          Add Workout
+        </Button>
+      </Box>
+
+      {/* Workouts list would be rendered here */}
+      <Box sx={{ mt: 2 }}>
         {/* Placeholder for workout list component */}
         <div>Workouts will be listed here. Count: {workouts.length}</div>
         {error && <div>Error: {error}</div>}
