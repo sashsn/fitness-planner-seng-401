@@ -6,6 +6,8 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useAppDispatch, useAppSelector } from '../hooks/reduxHooks';
 import ExpandableSidebar from '../components/layouts/ExpandableSidebar';
 import { logout } from '../features/auth/authSlice';
+import LogoutIcon from '@mui/icons-material/Logout';
+
 
 const MainLayout: React.FC = () => {
   const theme = useTheme();
@@ -46,7 +48,6 @@ const MainLayout: React.FC = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column' }}> {/* CHANGED: For mobile, layout is column */}
       <CssBaseline />
       
-      {/* App Bar remains unchanged */}
       <AppBar
         position="fixed"
         sx={{
@@ -66,7 +67,7 @@ const MainLayout: React.FC = () => {
               onClick={handleDrawerToggle}
               sx={{ mr: 2 }}
             >
-              <MenuIcon />
+              
             </IconButton>
           )}
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
@@ -95,12 +96,20 @@ const MainLayout: React.FC = () => {
             }}
           >
             <MenuItem onClick={handleProfileClick}>Profile</MenuItem>
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            <MenuItem
+                onClick={handleLogout}
+                sx={{
+                  color: theme.palette.error.main,
+                }}
+              >
+                <LogoutIcon />
+                 Logout 
+              </MenuItem>
+            {/* <MenuItem color={theme.palette.error.main} onClick={handleLogout}>Logout</MenuItem> */}
           </Menu>
         </Toolbar>
       </AppBar>
       
-      {/* CHANGED: Render the expandable sidebar; it will render differently for mobile */}
       <ExpandableSidebar 
         username={username}
         userAvatar={userAvatar}
