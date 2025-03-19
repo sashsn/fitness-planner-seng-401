@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
 import { clearErrors, login } from '../../features/auth/authSlice';
 import AlertMessage from '../../components/ui/AlertMessage';
 
+
 const Login: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.auth);
@@ -36,7 +37,38 @@ const Login: React.FC = () => {
   });
 
   return (
-    <Box sx={{ width: '100%', maxWidth: 400, mx: 'auto' }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: `
+        linear-gradient(
+          to left,
+          rgba(0, 0, 0, 0.7) 0%,
+          rgba(0, 0, 0, 0.5) 30%,
+          rgba(0, 0, 0, 0.3) 60%,
+          rgba(0, 0, 0, 0) 100%
+        ),
+        url('/401-login.png')
+      `,
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+    <Box
+      sx={{
+        background: "white", 
+        backdropFilter: "blur(4px)", 
+        p: 2, 
+        width: '100%',
+        maxWidth: 400,
+        mx: 'auto', 
+        borderRadius: '8px' 
+      }}
+    >
       <Typography component="h1" variant="h5" align="center" gutterBottom>
         Sign In
       </Typography>
@@ -99,6 +131,8 @@ const Login: React.FC = () => {
           </Link>
         </Box>
       </form>
+    </Box>
+
     </Box>
   );
 };

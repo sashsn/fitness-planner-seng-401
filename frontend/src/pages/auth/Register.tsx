@@ -44,7 +44,38 @@ const Register: React.FC = () => {
   });
 
   return (
-    <Box sx={{ width: '100%', maxWidth: 600, mx: 'auto' }}>
+     <Box
+          sx={{
+            minHeight: '100vh',
+            background: `
+            linear-gradient(
+              to left,
+              rgba(0, 0, 0, 0.7) 0%,
+              rgba(0, 0, 0, 0.5) 30%,
+              rgba(0, 0, 0, 0.3) 60%,
+              rgba(0, 0, 0, 0) 100%
+            ),
+            url('/401-login.png')
+          `,
+            backgroundSize: 'cover',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+        <Box
+          sx={{
+            background: "white", 
+            backdropFilter: "blur(4px)", 
+            p: 2, 
+            width: '100%',
+            maxWidth: 500,
+            mx: 'auto', 
+            borderRadius: '8px' 
+          }}
+        >
       <Typography component="h1" variant="h5" align="center" gutterBottom>
         Create an Account
       </Typography>
@@ -203,6 +234,8 @@ const Register: React.FC = () => {
           </Link>
         </Box>
       </form>
+    </Box>
+
     </Box>
   );
 };
