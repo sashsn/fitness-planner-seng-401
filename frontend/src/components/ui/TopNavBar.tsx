@@ -9,7 +9,13 @@ const TopNavBar: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    dispatch(logout());
+    // Clear guest flag if set
+    localStorage.removeItem('guest');
+    
+    // Clear user authentication state
+    dispatch(logout()); // Assuming logout removes user data from the store
+  
+    // Navigate to login page
     navigate('/login');
   };
 

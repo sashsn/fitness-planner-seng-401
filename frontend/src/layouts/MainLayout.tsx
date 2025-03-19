@@ -23,10 +23,14 @@ const MainLayout: React.FC = () => {
   };
   
   const handleLogout = () => {
-    // Properly dispatch the logout action and navigate to login page
-    dispatch(logout());
-    // Force navigation to login page
-    navigate('/login', { replace: true });
+    // Clear guest flag if set
+    localStorage.removeItem('guest');
+    
+    // Clear user authentication state
+    dispatch(logout()); // Assuming logout removes user data from the store
+  
+    // Navigate to login page
+    navigate('/login');
   };
   
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {

@@ -106,9 +106,9 @@ const App: React.FC = () => {
   // Handle logout redirection
   useEffect(() => {
     if (!isAuthenticated && !localStorage.getItem('guest')) {
-      navigate('/login');  // Redirect to login if the user is not authenticated and not a guest
+      navigate('/login');  // Redirect to login if not authenticated and not a guest
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate]);  
   
 
   // Check authentication status on app load

@@ -59,8 +59,13 @@ const LoginForm = () => {
 
   // Handle "Continue as Guest"
   const handleGuestLogin = () => {
-    navigate('/dashboard'); 
+    // Set guest flag in localStorage
+    localStorage.setItem('guest', 'true');
+    
+    // Redirect to dashboard for guest user
+    navigate('/dashboard');
   };
+  
 
   return (
     <Container maxWidth="sm">
