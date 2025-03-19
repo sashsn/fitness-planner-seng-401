@@ -56,7 +56,7 @@ const CreateWorkout: React.FC = () => {
       );
 
       if (addWorkout.fulfilled.match(result)) {
-        navigate('/workouts');
+        navigate('/workouts/Workouts');
       }
     },
   });
@@ -208,7 +208,7 @@ const CreateWorkout: React.FC = () => {
               <Button
                 type="button"
                 variant="outlined"
-                onClick={() => navigate('/workouts')}
+                onClick={() => navigate('/workouts/Workouts')}
                 sx={{ mr: 1 }}
                 disabled={loading}
               >

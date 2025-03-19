@@ -72,7 +72,7 @@ const EditMeal: React.FC = () => {
         );
 
         if (editMeal.fulfilled.match(result)) {
-          navigate('/nutrition');
+          navigate('/nutrition/Nutrition');
         }
       }
     },
@@ -245,7 +245,7 @@ const EditMeal: React.FC = () => {
               <Button
                 type="button"
                 variant="outlined"
-                onClick={() => navigate('/nutrition')}
+                onClick={() => navigate('/nutrition/Nutrition')}
                 sx={{ mr: 1 }}
                 disabled={loading}
               >

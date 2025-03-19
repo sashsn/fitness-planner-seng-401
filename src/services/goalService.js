@@ -39,9 +39,9 @@ exports.getGoalsByUserId = async (userId) => {
  * @param {string} userId - User ID
  * @returns {Object} Goal data
  */
-exports.getGoalById = async (goalId, userId) => {
+exports.getGoalById = async (goalId) => {
   const goal = await FitnessGoal.findOne({
-    where: { id: goalId, UserId: userId }
+    where: { id: goalId }
   });
   
   if (!goal) {
@@ -58,9 +58,9 @@ exports.getGoalById = async (goalId, userId) => {
  * @param {Object} goalData - Updated goal data
  * @returns {Object} Updated goal
  */
-exports.updateGoal = async (goalId, userId, goalData) => {
+exports.updateGoal = async (goalId, goalData) => {
   const goal = await FitnessGoal.findOne({
-    where: { id: goalId, UserId: userId }
+    where: { id: goalId }
   });
   
   if (!goal) {
@@ -77,9 +77,10 @@ exports.updateGoal = async (goalId, userId, goalData) => {
  * @param {string} userId - User ID
  * @returns {boolean} Success status
  */
-exports.deleteGoal = async (goalId, userId) => {
+exports.deleteGoal = async (goalId) => {
+  console.log("deleting goal xxx");
   const goal = await FitnessGoal.findOne({
-    where: { id: goalId, UserId: userId }
+    where: { id: goalId}
   });
   
   if (!goal) {
@@ -97,9 +98,9 @@ exports.deleteGoal = async (goalId, userId) => {
  * @param {number} currentValue - Current value
  * @returns {Object} Updated goal with progress info
  */
-exports.updateGoalProgress = async (goalId, userId, currentValue) => {
+exports.updateGoalProgress = async (goalId, currentValue) => {
   const goal = await FitnessGoal.findOne({
-    where: { id: goalId, UserId: userId }
+    where: { id: goalId }
   });
   
   if (!goal) {

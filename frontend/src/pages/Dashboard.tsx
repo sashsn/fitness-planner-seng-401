@@ -13,7 +13,9 @@ import {
   ListItem,
   ListItemText,
   LinearProgress,
+  Chip ,
 } from '@mui/material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
@@ -35,7 +37,7 @@ const Dashboard: React.FC = () => {
   const { workouts, loading: workoutsLoading } = useAppSelector((state) => state.workouts);
   const { meals, loading: mealsLoading } = useAppSelector((state) => state.nutrition);
   const { goals, loading: goalsLoading } = useAppSelector((state) => state.goals);
-  const { profile } = useAppSelector((state) => state.profile);
+  // const { profile } = useAppSelector((state) => state.profile);
 
   useEffect(() => {
     dispatch(fetchWorkouts());
@@ -74,7 +76,7 @@ const Dashboard: React.FC = () => {
                   fullWidth 
                   variant="contained" 
                   startIcon={<AddIcon />}
-                  onClick={() => navigate('/workouts/create')}
+                  onClick={() => navigate('/workouts/CreateWorkout')}
                 >
                   Add Workout
                 </Button>
@@ -128,14 +130,6 @@ const Dashboard: React.FC = () => {
                   Add Goal
                 </Button>
 
-                {/* <Button 
-                  fullWidth 
-                  variant="contained" 
-                  startIcon={<AddIcon />}
-                  onClick={() => navigate('/goals/CreateGoal')}
-                >
-                  Add Goal
-                </Button> */}
               </Box>
             </CardContent>
           </Card>
@@ -180,23 +174,37 @@ const Dashboard: React.FC = () => {
             <CardContent>
               {goals.length > 0 ? (
                 goals.slice(0, 3).map((goal) => {
+                  // Calculate progress if targetValue and currentValue exist.
                   const progress = goal.currentValue && goal.targetValue 
                     ? (goal.currentValue / goal.targetValue * 100) 
                     : 0;
                     
                   return (
                     <Box key={goal.id} sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Typography variant="body2">{goal.name}</Typography>
                         <Typography variant="body2">
                           {goal.currentValue || 0} / {goal.targetValue} {goal.unit}
                         </Typography>
                       </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={progress > 100 ? 100 : progress} 
-                        sx={{ mt: 1, mb: 1 }} 
-                      />
+                      {goal.isCompleted ? (
+                        // If the goal is completed, display a Chip instead of the progress bar.
+                        <Box sx={{ mt: 1, mb: 1, display: 'flex', justifyContent: 'center' }}>
+                          <Chip 
+                            label="Completed" 
+                            color="success" 
+                            icon={<CheckCircleIcon />} 
+                            sx={{ fontWeight: 'bold' }}
+                          />
+                        </Box>
+                      ) : (
+                        // Otherwise, show the progress bar.
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={progress > 100 ? 100 : progress} 
+                          sx={{ mt: 1, mb: 1 }} 
+                        />
+                      )}
                     </Box>
                   );
                 })
@@ -205,7 +213,7 @@ const Dashboard: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
+</Grid>
 
         {/* Workout Generator */}
         <Grid item xs={12} md={6} lg={4}>

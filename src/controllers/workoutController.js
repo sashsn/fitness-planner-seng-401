@@ -12,7 +12,7 @@ const workoutService = require('../services/workoutService');
  */
 exports.createWorkout = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.params.userId;
     const workoutData = { ...req.body, UserId: userId };
     const workout = await workoutService.createWorkout(workoutData);
     res.status(201).json(workout);
@@ -29,7 +29,7 @@ exports.createWorkout = async (req, res, next) => {
  */
 exports.getUserWorkouts = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.params.userId;
     const workouts = await workoutService.getWorkoutsByUserId(userId);
     res.status(200).json(workouts);
   } catch (error) {
@@ -45,9 +45,8 @@ exports.getUserWorkouts = async (req, res, next) => {
  */
 exports.getWorkoutById = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    const workout = await workoutService.getWorkoutById(id, userId);
+    const id  = req.params.id;
+    const workout = await workoutService.getWorkoutById(id);
     res.status(200).json(workout);
   } catch (error) {
     next(error);
@@ -62,10 +61,9 @@ exports.getWorkoutById = async (req, res, next) => {
  */
 exports.updateWorkout = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
+    const id = req.params.id;
     const workoutData = req.body;
-    const updatedWorkout = await workoutService.updateWorkout(id, userId, workoutData);
+    const updatedWorkout = await workoutService.updateWorkout(id, workoutData);
     res.status(200).json(updatedWorkout);
   } catch (error) {
     next(error);
@@ -80,9 +78,8 @@ exports.updateWorkout = async (req, res, next) => {
  */
 exports.deleteWorkout = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    await workoutService.deleteWorkout(id, userId);
+    const  id  = req.params.id;
+    await workoutService.deleteWorkout(id);
     res.status(204).end();
   } catch (error) {
     next(error);
@@ -97,10 +94,9 @@ exports.deleteWorkout = async (req, res, next) => {
  */
 exports.addExerciseToWorkout = async (req, res, next) => {
   try {
-    const { workoutId } = req.params;
-    const userId = req.user.id;
+    const workoutId  = req.params.wID;
     const exerciseData = req.body;
-    const exercise = await workoutService.addExerciseToWorkout(workoutId, userId, exerciseData);
+    const exercise = await workoutService.addExerciseToWorkout(workoutId, exerciseData);
     res.status(201).json(exercise);
   } catch (error) {
     next(error);
