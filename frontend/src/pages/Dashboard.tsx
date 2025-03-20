@@ -230,7 +230,7 @@ const Dashboard: React.FC = () => {
                 variant="contained"
                 color="primary"
                 component={RouterLink}
-                to="/workouts/generate"
+                to="/workouts/GenerateWorkout"
                 fullWidth
               >
                 Create Workout Plan

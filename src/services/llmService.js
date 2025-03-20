@@ -149,7 +149,9 @@ ${userProfile ? `
 - Gender: ${userProfile.gender || 'Unknown'}
 ` : ''}
 
-Generate a comprehensive workout plan in JSON format with the following structure:
+Generate a comprehensive workout plan in valid JSON format with the following structure,
+the values in this example should be updated with new values to matche the peronalized plan you will provide, right now they are descriptors of what to put and are not real valid values.
+Ensure the response is valid JSON:
 {
   "workoutPlan": {
     "metadata": {
@@ -241,13 +243,13 @@ function parseWorkoutPlanResponse(response) {
       jsonString = jsonMatch[0];
       logger.debug(`Extracted JSON object with length: ${jsonString.length}`);
     }
-    
+
     // Preprocessing: Try to fix common JSON syntax errors
-    jsonString = cleanJsonString(jsonString);
-    
+    // jsonString = cleanJsonString(jsonString);
     // Parse the JSON
     const workoutPlan = JSON.parse(jsonString);
     
+
     // Validate the structure has required fields
     if (!workoutPlan.workoutPlan) {
       throw new Error('Missing workoutPlan field in response');
@@ -257,7 +259,7 @@ function parseWorkoutPlanResponse(response) {
     return workoutPlan;
   } catch (error) {
     logger.error(`Failed to parse LLM response: ${error.message}`);
-    logger.debug(`Response snippet: ${response.substring(0, 200)}...`);
+    // logger.debug(`Response snippet: ${response.substring(0, 200)}...`);
     
     if (error.message.includes('position')) {
       // Extract position from error message

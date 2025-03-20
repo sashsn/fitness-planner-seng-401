@@ -25,19 +25,22 @@ export const generateWorkoutPlan = async (preferences: WorkoutPreferences): Prom
     const token = getAuthToken();
     
     // Configure timeout to prevent long-hanging requests
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      timeout: 60000 // 60 second timeout - increased to allow for LLM processing
-    };
+    // const config = {
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'Authorization': `Bearer ${token}`
+    //   },
+    //   timeout: 60000 // 60 second timeout - increased to allow for LLM processing
+    // };
     
     console.log('Sending workout generation request to API...');
-    const response = await axios.post('/api/ai/workout', preferences, config);
+    const response = await axios.post('/api/ai/workout', preferences);
     
-    console.log('Received workout plan from API');
+    console.log('Received workout plan from API: ', response);
     return response.data;
+
+
+    
   } catch (error: any) {
     // Log detailed error information
     console.error('Workout generation error:', error);
