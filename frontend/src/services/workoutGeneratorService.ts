@@ -11,7 +11,7 @@ export interface WorkoutPreferences {
   preferredWorkoutTypes: string[];
   equipmentAccess: string;
   limitations: string;
-  additionalNotes: string;
+  additionalNotes: string
 }
 
 /**

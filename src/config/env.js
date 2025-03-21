@@ -17,7 +17,9 @@ module.exports = {
   DB_USER: process.env.DB_USER || 'postgres',
   DB_PASSWORD: process.env.DB_PASSWORD || 'O7frfuiq.',
   DB_NAME: process.env.DB_NAME || 'fitness_planner', // Match exactly the database name from psql output
-  
+  OPENAI_API_KEY: '',
+  OPENAI_API_URL: 'https://api.openai.com/v1/chat/completions',
+
   // CORS configuration
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000'
 };

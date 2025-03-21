@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 
 // OpenAI API configuration
 const OPENAI_API_URL = process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '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';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const DEFAULT_TIMEOUT = 60000; // 60 seconds
 
 /**
