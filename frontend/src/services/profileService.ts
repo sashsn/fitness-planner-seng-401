@@ -24,36 +24,51 @@ export interface ProfileUpdateData {
   email?: string;
 }
 
+const getUserId = (): string | null => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  return user?.id || null;
+};
+
+
 /**
- * Get user profile
- * @returns Promise with user profile data
+ * Retrieves the current user's profile.
+ * Endpoint: GET /api/users/profile
  */
 export const getUserProfile = async (): Promise<UserProfile> => {
-  const response = await api.get('/users/profile');
-  return response.data;
+  try {
+    const userId = getUserId();
+    if (!userId) throw new Error("User ID not found. Please log in.");
+
+    const response = await api.get(`/users/profile/${userId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
 };
 
 /**
- * Update user profile
- * @param profileData Updated profile data
- * @returns Promise with updated profile
+ * Updates the current user's profile.
+ * Endpoint: PUT /api/users/profile
  */
 export const updateUserProfile = async (profileData: ProfileUpdateData): Promise<UserProfile> => {
-  const formattedData = {
-    ...profileData,
-    dateOfBirth: profileData.dateOfBirth instanceof Date 
-      ? formatISO(profileData.dateOfBirth) 
-      : profileData.dateOfBirth
-  };
-  
-  const response = await api.put('/users/profile', formattedData);
-  return response.data;
+  try {
+    const userId = getUserId();
+    if (!userId) throw new Error("User ID not found. Please log in.");
+
+    const formattedData = {
+      ...profileData,
+      dateOfBirth: profileData.dateOfBirth instanceof Date 
+        ? formatISO(profileData.dateOfBirth) 
+        : profileData.dateOfBirth,
+    };
+    const response = await api.put(`/users/profile/${userId}`, formattedData);
+    return response.data;
+  } catch (error: any) {
+    console.error("Error updating user profile:", error);
+    throw error;
+  }
 };
 
-/**
- * Delete user account
- * @returns Promise
- */
-export const deleteUserAccount = async (): Promise<void> => {
-  await api.delete('/users/profile');
-};
+
+

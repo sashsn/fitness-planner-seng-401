@@ -35,6 +35,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true, // Changed from false to true for easier testing
     },
+    weight: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    },
+    height: {
+          type: DataTypes.FLOAT,
+          allowNull: true
+        },
     role: {
       type: DataTypes.ENUM('user', 'admin'),
       defaultValue: 'user'

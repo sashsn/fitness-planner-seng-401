@@ -82,7 +82,6 @@ const Goals: React.FC = () => {
         
         <Grid container spacing={3}>
           {goals.map((goal) => {
-            console.log("the goal: ", goal);
             const progress = goal.currentValue && goal.targetValue 
               ? (goal.currentValue / goal.targetValue * 100) 
               : 0;

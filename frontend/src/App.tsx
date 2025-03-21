@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from './hooks/reduxHooks';
 import { checkAuth } from './features/auth/authSlice';
 import { ThemeProvider } from '@mui/material/styles';
@@ -16,6 +16,8 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+
 import Workouts from './pages/workouts/Workouts';
 import EditWorkout from './pages/workouts/EditWorkout';
 import CreateWorkout from './pages/workouts/CreateWorkout';
@@ -38,7 +40,15 @@ import PlanDetail from './pages/workouts/PlanDetail';
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAppSelector(state => state.auth);
-  
+  const location = useLocation();  // Get current location
+  const isGuest = location.pathname === '/dashboard' && location.search.includes('guest=true');
+
+  useEffect(() => {
+    if (isGuest) {
+      localStorage.clear();
+    }
+  }, [isGuest]);
+
   // Check authentication status on app load
   useEffect(() => {
     dispatch(checkAuth());
@@ -48,6 +58,26 @@ const App: React.FC = () => {
   useEffect(() => {
     console.log("App - Authentication status:", isAuthenticated ? "Authenticated" : "Not authenticated");
   }, [isAuthenticated]);
+  
+  
+  if (isGuest) {
+    // In guest mode, we render the full layout with locked navigation.
+    // We restrict routes to only allow GenerateWorkout (or dashboard content that is non-premium).
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Routes>
+          <Route path="/" 
+          >
+            <Route index path="workouts/GenerateWorkout" element={<GenerateWorkout isGuest={true} />} />
+            <Route path="*" element={<GenerateWorkout />} />
+
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </ThemeProvider>
+    );
+  }
   
   return (
     <ThemeProvider theme={theme}>
@@ -63,7 +93,7 @@ const App: React.FC = () => {
         
         {/* Protected routes with layout */}
         <Route path="/" element={
-          <ProtectedRoute>
+          <ProtectedRoute isGuest={isGuest}>
             <MainLayout />
           </ProtectedRoute>
         }>
@@ -88,7 +118,7 @@ const App: React.FC = () => {
 
           <Route path="/workouts/PlanDetails/:id" element={<PlanDetail />} />
 
-          <Route path="profile" element={<div>Profile Page</div>} />
+          <Route path="/Profile" element={<Profile />} />
         </Route>
         
         <Route path="*" element={<NotFound />} />

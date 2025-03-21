@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import {
   getUserProfile,
   updateUserProfile,
-  deleteUserAccount,
   UserProfile,
   ProfileUpdateData
 } from '../../services/profileService';
@@ -44,17 +43,6 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
-export const deleteAccount = createAsyncThunk(
-  'profile/delete',
-  async (_, { rejectWithValue }) => {
-    try {
-      await deleteUserAccount();
-      return true;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete account');
-    }
-  }
-);
 
 // Profile slice
 const profileSlice = createSlice({
@@ -94,19 +82,6 @@ const profileSlice = createSlice({
       state.error = action.payload as string;
     });
 
-    // Delete account
-    builder.addCase(deleteAccount.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(deleteAccount.fulfilled, (state) => {
-      state.profile = null;
-      state.loading = false;
-    });
-    builder.addCase(deleteAccount.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
   },
 });
 

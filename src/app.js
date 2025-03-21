@@ -10,6 +10,8 @@ const path = require('path');
 const { connectDB } = require('./config/database');
 const logger = require('./utils/logger');
 
+
+
 // Import error handling
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
@@ -23,6 +25,8 @@ const goalRoutes = require('./routes/goalRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const fitnessPlanRoutes = require('./routes/fitnessPlanRoutes');
+
+require('dotenv').config();
 
 const app = express();
 
@@ -78,7 +82,7 @@ app.get('/health', (req, res) => {
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../frontend/build')));
   app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend', 'build', 'index.html'));
+    res.sendFile(path.resolve(__dirname, '../frontend/build', 'index.html'));
   });
 }
 

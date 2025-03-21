@@ -4,12 +4,13 @@ import { useAppSelector } from '../hooks/reduxHooks';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  isGuest?: boolean;  // Optional flag to allow guest access
 }
 
 /**
- * Route guard that only allows authenticated users
+ * Route guard that only allows authenticated users or guest users with isGuest flag
  */
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, isGuest }) => {
   const auth = useAppSelector(state => state.auth);
   const { isAuthenticated, isLoading, checkingAuth, user } = auth;
   
@@ -29,15 +30,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return null;
   }
   
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+   // If the user is not authenticated and it's not a guest, redirect to login
+   if (!isAuthenticated && !isGuest) {
     console.log('ProtectedRoute - Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
   
-  // Render children if authenticated
-  console.log('ProtectedRoute - User authenticated, rendering children');
-  return <>{children}</>;
+   // Render children if authenticated or if it's a guest
+   console.log('ProtectedRoute - User authenticated or guest, rendering children');
+   return <>{children}</>;
 };
 
 export default ProtectedRoute;

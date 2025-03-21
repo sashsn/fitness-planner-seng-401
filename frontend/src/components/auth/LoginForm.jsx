@@ -63,6 +63,11 @@ const LoginForm = () => {
     }
   };
 
+  // Handle "Continue as Guest"
+  const handleGuestLogin = () => {
+    navigate('/dashboard'); 
+  };
+
   return (
     <Container maxWidth="sm">
       <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -119,6 +124,16 @@ const LoginForm = () => {
             onClick={() => navigate('/register')}
           >
             Don't have an account? Sign Up
+          </Button>
+
+          {/* Continue as Guest button */}
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={handleGuestLogin} 
+            sx={{ mt: 2 }}
+          >
+            Continue as Guest
           </Button>
         </Box>
       </Box>

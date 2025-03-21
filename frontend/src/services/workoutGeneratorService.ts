@@ -13,6 +13,7 @@ export interface WorkoutPreferences {
   equipmentAccess: string;
   limitations: string;
   additionalNotes: string;
+  guest?: boolean; // optional flag
 }
 
 const getUserId = (): string | null => {
@@ -27,24 +28,22 @@ const getUserId = (): string | null => {
  */
 export const generateWorkoutPlan = async (preferences: WorkoutPreferences): Promise<any> => {
   try {
-    const userId = getUserId();
-    if (!userId) throw new Error("User ID not found. Please log in.");
-
     // Use actual API endpoint instead of mocking
     const token = getAuthToken();
     
-    console.log('Sending workout generation request to API...');
     const response = await axios.post('/api/ai/workout', preferences);
     
     const workoutPlan = response.data;
+    
+    const userIdCheck = getUserId();
 
-    // Fire-and-forget: Call the save endpoint without awaiting the result.
-    api.post('/fitnessPlan', { userId, planDetails: workoutPlan })
-      .then(() => console.log('Workout plan saved successfully.'))
-      .catch((saveError: any) => console.error('Error saving workout plan:', saveError));
-
+    if (userIdCheck) {
+      // Auto-save only if not guest, or user is logged in 
+      api.post('/fitnessPlan', { userId: getUserId(), planDetails: workoutPlan })
+        .then(() => console.log('Workout plan saved successfully.'))
+        .catch((saveError: any) => console.error('Error saving workout plan:', saveError));
+    }
     return response.data;
-
 
     
   } catch (error: any) {

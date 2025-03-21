@@ -9,6 +9,7 @@ import { logout } from '../features/auth/authSlice';
 import LogoutIcon from '@mui/icons-material/Logout';
 
 
+
 const MainLayout: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // CHANGED: Detect mobile view
@@ -40,7 +41,7 @@ const MainLayout: React.FC = () => {
   };
   
   const handleProfileClick = () => {
-    navigate('/profile');
+    navigate('/Profile');
     handleProfileMenuClose();
   };
 
