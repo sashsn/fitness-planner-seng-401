@@ -4,8 +4,8 @@
 const express = require('express');
 const router = express.Router();
 const userRoutes = require('./userRoutes');
-const { register } = require('../controllers/authController');
-const authController = require('../controllers/authController');
+const { register } = require('../controllers/AuthController');
+const authController = require('../controllers/AuthController');
 
 
 // Root API route

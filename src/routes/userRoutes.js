@@ -4,7 +4,7 @@
  */
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController');
+const authController = require('../controllers/AuthController');
 const userController = require('../controllers/userController');
 
 //Get current user profile (requires authentication)
