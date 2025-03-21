@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom'; // Add this import for navigation
+import { useNavigate, useLocation } from 'react-router-dom'; // Add this import for navigation
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -19,6 +19,7 @@ import {
   RadioGroup,
   TextField,
   Typography,
+  Paper,
   CircularProgress,
   Alert,
   AlertTitle, // Add this import for AlertTitle
@@ -34,6 +35,9 @@ import {
 import GeneratedWorkoutDisplay from '../../components/workouts/GeneratedWorkoutDisplay';
 import { WorkoutPreferences } from '../../services/workoutGeneratorService';
 import NetworkErrorAlert from '../../components/ui/NetworkErrorAlert';
+import LockIcon from '@mui/icons-material/Lock';
+import PremiumOverlay from '../../components/PremiumOverlay';
+
 
 // Define the workout types options
 const workoutTypes = [
@@ -68,8 +72,13 @@ const trackWorkoutGeneration = (preferences: WorkoutPreferences) => {
   });
 };
 
-const GenerateWorkout: React.FC = () => {
+interface GenerateWorkoutProps {
+  isGuest?: boolean;
+}
+
+const GenerateWorkout: React.FC<GenerateWorkoutProps> = ({ isGuest = false }) => {
   const navigate = useNavigate(); // Add this hook for navigation
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const { loading, workoutPlan, error, success } = useAppSelector(state => state.workoutGenerator);
   const { profile } = useAppSelector(state => state.profile);
@@ -78,6 +87,19 @@ const GenerateWorkout: React.FC = () => {
   const [isNetworkError, setIsNetworkError] = useState(false);
   const [scrollToResults, setScrollToResults] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  const [locked, setLocked] = useState(isGuest);
+  
+  // Check URL params on mount/when location.search changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    // If the guest param is present and equals "true", set locked to true.
+    if (params.get('guest') === 'true') {
+      setLocked(true);
+    } else {
+      setLocked(false);
+    }
+  }, [location.search]);
   
   // Use useEffect for checking workoutPlan and setting success alerts with complete dependencies
   useEffect(() => {
@@ -152,7 +174,12 @@ const GenerateWorkout: React.FC = () => {
       
       // Dispatch actions
       dispatch(setPreferences(values));
-      dispatch(generateWorkout(values));
+      // For guest users, pass a flag to skip auto-save and clear user info if needed
+      if (locked) {
+        dispatch(generateWorkout({ ...values, guest: true }));
+      } else {
+        dispatch(generateWorkout(values));
+      }
     }
   });
 
@@ -230,9 +257,44 @@ const GenerateWorkout: React.FC = () => {
     }
     return null;
   };
+  
+  useEffect(() => {
+    console.log('GenerateWorkout isGuest:', isGuest);
+  }, [isGuest]);
 
   return (
     <Container maxWidth="md">
+      {locked && (
+        <Paper
+          elevation={6}
+          sx={{
+            position: 'fixed',
+            top: '15%',
+            right: 10,
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            px: 2,
+            py: 1,
+            borderRadius: 1,
+            backgroundColor: 'primary.main',
+            color: 'white',
+          }}
+        >
+          <LockIcon sx={{ mr: 1 }} />
+          <Typography variant="subtitle1" sx={{ mr: 2 }}>
+            Sign In for Premium Features
+          </Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={() => navigate('/login')}
+          >
+            Sign In
+          </Button>
+        </Paper>
+      )}
+
       <Box my={4}>
         <Typography variant="h4" component="h1" gutterBottom align="center">
           Generate Custom Workout Plan
@@ -268,7 +330,7 @@ const GenerateWorkout: React.FC = () => {
           {error}
         </Alert>
       ) : null}
-      
+
       <Card>
         <CardContent>
           <form onSubmit={formik.handleSubmit}>

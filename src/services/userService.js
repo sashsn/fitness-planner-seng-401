@@ -146,7 +146,6 @@ const updateUser = async (userId, userData) => {
       throw new ApiError(404, 'User not found');
     }
     
-    // No password hashing - store password directly if it's being updated
     
     await user.update(userData);
     

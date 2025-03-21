@@ -37,7 +37,7 @@ const Dashboard: React.FC = () => {
   const { workouts, loading: workoutsLoading } = useAppSelector((state) => state.workouts);
   const { meals, loading: mealsLoading } = useAppSelector((state) => state.nutrition);
   const { goals, loading: goalsLoading } = useAppSelector((state) => state.goals);
-  // const { profile } = useAppSelector((state) => state.profile);
+  const { profile } = useAppSelector((state) => state.profile);
 
   useEffect(() => {
     dispatch(fetchWorkouts());

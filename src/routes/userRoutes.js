@@ -5,11 +5,14 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const userController = require('../controllers/userController');
 
-// Basic placeholder route
-router.get('/profile', (req, res) => {
-  res.status(200).json({ message: 'User profile endpoint placeholder' });
-});
+//Get current user profile (requires authentication)
+router.get('/profile/:userId', userController.getProfile);
+
+//Update current user profile (requires authentication)
+router.put('/profile/:userId', userController.updateProfile);
+
 
 /**
  * @route POST /api/users/register

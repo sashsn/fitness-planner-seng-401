@@ -113,7 +113,7 @@ exports.logout = (req, res) => {
  */
 exports.getProfile = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.params.userId;
     const user = await userService.getUserById(userId);
     res.status(200).json(user);
   } catch (error) {
@@ -129,7 +129,8 @@ exports.getProfile = async (req, res, next) => {
  */
 exports.updateProfile = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    
+    const userId = req.params.userId;
     const userData = req.body;
     const updatedUser = await userService.updateUser(userId, userData);
     

@@ -20,14 +20,12 @@ import { fetchProfile, updateProfile, clearProfileErrors } from '../features/pro
 import { logout } from '../features/auth/authSlice';
 import PageHeader from '../components/ui/PageHeader';
 import AlertMessage from '../components/ui/AlertMessage';
-import ConfirmDialog from '../components/ui/ConfirmDialog';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const Profile: React.FC = () => {
   const dispatch = useAppDispatch();
   const { profile, loading, error } = useAppSelector((state) => state.profile);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     dispatch(fetchProfile());
@@ -63,14 +61,7 @@ const Profile: React.FC = () => {
     },
   });
 
-  const handleDeleteAccount = () => {
-    setShowDeleteDialog(true);
-  };
-
-  const confirmDeleteAccount = async () => {
-    await dispatch(logout());
-    setShowDeleteDialog(false);
-  };
+  
 
   if (loading && !profile) {
     return <LoadingSpinner />;
@@ -218,13 +209,7 @@ const Profile: React.FC = () => {
               </Grid>
             </Grid>
             <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={handleDeleteAccount}
-              >
-                Delete Account
-              </Button>
+              
               <Button
                 type="submit"
                 variant="contained"
@@ -237,16 +222,7 @@ const Profile: React.FC = () => {
         </CardContent>
       </Card>
 
-      <ConfirmDialog
-        open={showDeleteDialog}
-        title="Delete Account"
-        message="Are you sure you want to delete your account? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        onConfirm={confirmDeleteAccount}
-        onCancel={() => setShowDeleteDialog(false)}
-        confirmColor="error"
-      />
+      
     </>
   );
 };

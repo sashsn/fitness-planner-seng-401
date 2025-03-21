@@ -42,12 +42,6 @@ router.get('/meals/getMealId/:id', nutritionController.getMealById);
  */
 router.put('/meals/:id', nutritionController.updateMeal);
 
-/**
- * @route DELETE /api/nutrition/meals/:id
- * @description Delete a meal entry
- * @access Private
- */
-router.delete('/meals/:id', nutritionController.deleteMeal);
 
 /**
  * @route GET /api/nutrition/summary
