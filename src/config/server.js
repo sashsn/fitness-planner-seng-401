@@ -26,3 +26,5 @@ module.exports = {
 
 console.log(`Server configured for ${module.exports.environment} environment`);
 console.log(`OpenAI API configured for workout generation`);
+console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_NAME:", process.env.DB_NAME);
