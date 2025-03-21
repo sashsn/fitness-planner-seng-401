@@ -17,6 +17,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
 import Workouts from './pages/workouts/Workouts';
+import EditWorkout from './pages/workouts/EditWorkout';
 import CreateWorkout from './pages/workouts/CreateWorkout';
 import GenerateWorkout from './pages/workouts/GenerateWorkout';
 import WorkoutPlans from './pages/workouts/WorkoutPlans';
@@ -30,6 +31,9 @@ import CreateGoal from './pages/goals/CreateGoal';
 import Nutrition from './pages/nutrition/Nutrition';
 import EditMeal from './pages/nutrition/EditMeal';
 import CreateMeal from './pages/nutrition/CreateMeal';
+
+import PlanDetail from './pages/workouts/PlanDetail';
+
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -70,7 +74,8 @@ const App: React.FC = () => {
           <Route path="workouts/GenerateWorkout" element={<GenerateWorkout />} />
           <Route path="workouts/:id" element={<WorkoutDetail />} />
           <Route path="workouts/WorkoutPlans" element={<WorkoutPlans />} />
-          
+          <Route path="workouts/EditWorkout/:id" element={<EditWorkout />} />
+
 
           {/* will need to add paths for all potential paths from the dashboard to this file */}
           <Route path="/goals/CreateGoal" element={<CreateGoal />} />
@@ -80,6 +85,8 @@ const App: React.FC = () => {
           <Route path="/nutrition/CreateMeal" element={<CreateMeal />} />
           <Route path="/nutrition/:id/EditMeal" element={<EditMeal />} />
           <Route path="/nutrition/Nutrition" element={<Nutrition />} />
+
+          <Route path="/workouts/PlanDetails/:id" element={<PlanDetail />} />
 
           <Route path="profile" element={<div>Profile Page</div>} />
         </Route>

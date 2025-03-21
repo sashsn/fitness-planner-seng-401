@@ -70,7 +70,17 @@ const MainLayout: React.FC = () => {
               
             </IconButton>
           )}
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          <Box
+            component="img"
+            src="/logo-main.png"
+            alt="Logo Text"
+            sx={{
+              height: 40, // Adjust height to fit well within the AppBar
+              width: "auto", // Maintain aspect ratio
+              marginRight: 2, // Adds spacing between the logo and the text
+            }}
+          />
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, paddingLeft: 2, borderLeft: "2px solid rgba(0, 0, 0, 0.2)", }}>
             Fitness Planner
           </Typography>
           <IconButton onClick={handleProfileMenuOpen} sx={{ ml: 1 }}>

@@ -13,10 +13,8 @@ logger.info(`Using LLM API at ${serverConfig.llmApiUrl}`);
 
 // Start server
 const startServer = async () => {
-  console.log("here1");
 
   try {
-    console.log("here2");
 
     await connectDB();
     
