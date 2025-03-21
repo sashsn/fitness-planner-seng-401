@@ -6,6 +6,8 @@ const { User } = require('../models');
           const jwt = require('jsonwebtoken');
 const { ApiError } = require('../utils/errors');
 const logger = require('../utils/logger');
+const { sequelize } = require('../models'); 
+
 
 /**
  * Create a new user
@@ -26,8 +28,7 @@ const createUser = async (userData) => {
       throw new ApiError(409, 'Username already taken');
     }
     
-    // No password hashing - store password directly
-    // Create user with plain text password
+    
     const user = await User.create(userData);
     
     // Generate JWT token
@@ -63,27 +64,40 @@ const createUser = async (userData) => {
  * @param {string} password - User password
  * @returns {Object} User object and JWT token
  */
+
+
 const loginUser = async (email, password) => {
   try {
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      throw new ApiError(401, 'Invalid credentials');
+    const user = await User.findOne({
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('email')),
+        email.toLowerCase()
+      )
+    });
+
+    // Check if the user exists and if the account is active
+    if (!user || !user.isActive) {
+      throw new ApiError(401, 'Invalid credentials or account deleted');
     }
-    
-    // Use bcrypt to compare passwords
+
+    console.log("✅ User found:", user.email);
+
+    // Check if the password matches
     const isPasswordValid = await user.matchPassword(password);
+    
     if (!isPasswordValid) {
       throw new ApiError(401, 'Invalid credentials');
     }
-    
-    // Generate JWT token
+
+
+    // Generate a token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'your_jwt_secret_key',
       { expiresIn: '24h' }
     );
-    
-    return { 
+
+    return {
       user: {
         id: user.id,
         username: user.username,
@@ -91,17 +105,19 @@ const loginUser = async (email, password) => {
         firstName: user.firstName,
         lastName: user.lastName,
         dateOfBirth: user.dateOfBirth,
-        height: user.height,
-        weight: user.weight,
         role: user.role
       },
       token
     };
   } catch (error) {
-    logger.error('Error during login:', error);
+    console.error("🔥 Error in loginUser:", error);
     throw error;
   }
 };
+
+
+
+
 
 /**
  * Get user by ID
@@ -141,15 +157,25 @@ const getUserById = async (userId) => {
  */
 const updateUser = async (userId, userData) => {
   try {
+    console.log(`🔄 Attempting to update User ID: ${userId}`);
+
+    // Fetch user
     const user = await User.findByPk(userId);
     if (!user) {
+      console.error("❌ User not found for ID:", userId);
       throw new ApiError(404, 'User not found');
     }
-    
-    // No password hashing - store password directly if it's being updated
-    
+
+    console.log("✅ User found:", user.email);
+
+    // Log incoming update data
+    console.log("📌 Updating with data:", userData);
+
+    // Update user fields
     await user.update(userData);
-    
+
+    console.log("✅ User updated successfully");
+
     return {
       id: user.id,
       username: user.username,
@@ -162,10 +188,11 @@ const updateUser = async (userId, userData) => {
       role: user.role
     };
   } catch (error) {
-    logger.error(`Error updating user ${userId}:`, error);
+    console.error(`🔥 Error updating user ${userId}:`, error);
     throw error;
   }
 };
+
 
 /**
  * Delete user by ID
@@ -178,14 +205,17 @@ const deleteUser = async (userId) => {
     if (!user) {
       throw new ApiError(404, 'User not found');
     }
-    
-    await user.destroy();
+
+    // Instead of deleting, deactivate the user
+    await user.update({ isActive: false });
+
     return true;
   } catch (error) {
-    logger.error(`Error deleting user ${userId}:`, error);
+    logger.error(`Error deactivating user ${userId}:`, error);
     throw error;
   }
 };
+
 
 /**
  * Verify user credentials

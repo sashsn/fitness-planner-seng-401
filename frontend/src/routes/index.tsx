@@ -5,6 +5,7 @@ import GenerateWorkout from '../pages/workouts/GenerateWorkout';
 import WorkoutPlans from '../pages/workouts/WorkoutPlans';
 import Dashboard from '../pages/Dashboard';
 import ProtectedRoute from './ProtectedRoute';
+import Nutrition from '../pages/nutrition/Nutrition';
 
 import CreateMeal from '../pages/nutrition/CreateMeal';
 
@@ -22,6 +23,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
 
         <Route path="/nutrition/CreateMeal" element={<CreateMeal />} />
         

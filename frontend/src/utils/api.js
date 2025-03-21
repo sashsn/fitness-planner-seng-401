@@ -47,7 +47,7 @@ const authAPI = {
         errorMessage = error.message;
       }
       
-      throw { message: errorMessage, details: error };
+      throw new Error(errorMessage);
     }
   },
   
@@ -78,6 +78,9 @@ const authAPI = {
     } catch (error) {
       console.error('Login error details:', error);
       
+      let errorMessage = 'Login failed. Please try again.';
+
+
       // More detailed error logging
       if (error.response) {
         console.error('Response error status:', error.response.status);
@@ -88,11 +91,8 @@ const authAPI = {
         console.error('Error message:', error.message);
       }
       
-      throw { 
-        message: error.response?.data?.message || 'Login failed. Please try again.',
-        status: error.response?.status,
-        details: error
-      };
+      throw new Error(errorMessage);
+
     }
   },
   
@@ -119,15 +119,13 @@ const authAPI = {
 // Add interceptors for token handling
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token');  // Ensure token is retrieved
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`; // Attach token
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export { api, authAPI };

@@ -9,9 +9,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     username: {
       type: DataTypes.STRING,
-      allowNull: true, // Changed from false to true for easier testing
+      allowNull: true, 
       validate: {
-        // notEmpty: true // Commented out for easier testing
       }
     },
     firstName: {
@@ -33,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: true, // Changed from false to true for easier testing
+      allowNull: true, 
     },
     role: {
       type: DataTypes.ENUM('user', 'admin'),
@@ -42,6 +41,10 @@ module.exports = (sequelize, DataTypes) => {
     dateOfBirth: {
       type: DataTypes.DATE,
       allowNull: true
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true, // Default to active
     }
   }, {
     timestamps: true,
@@ -55,10 +58,10 @@ module.exports = (sequelize, DataTypes) => {
     }
   });
 
-  // Instance method to compare passwords
   User.prototype.matchPassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
   };
+
 
   // Define Associations
   User.associate = (models) => {
