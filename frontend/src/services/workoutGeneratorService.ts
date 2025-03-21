@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getAuthToken } from './authService';
+import api from './api';
 
 // Define interface for workout preferences
 export interface WorkoutPreferences {
@@ -14,6 +15,11 @@ export interface WorkoutPreferences {
   additionalNotes: string;
 }
 
+const getUserId = (): string | null => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  return user?.id || null;
+};
+
 /**
  * Generate a workout plan using OpenAI
  * @param preferences User's workout preferences
@@ -21,23 +27,26 @@ export interface WorkoutPreferences {
  */
 export const generateWorkoutPlan = async (preferences: WorkoutPreferences): Promise<any> => {
   try {
+    const userId = getUserId();
+    if (!userId) throw new Error("User ID not found. Please log in.");
+
     // Use actual API endpoint instead of mocking
     const token = getAuthToken();
     
-    // Configure timeout to prevent long-hanging requests
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      timeout: 60000 // 60 second timeout - increased to allow for LLM processing
-    };
-    
     console.log('Sending workout generation request to API...');
-    const response = await axios.post('/api/ai/workout', preferences, config);
+    const response = await axios.post('/api/ai/workout', preferences);
     
-    console.log('Received workout plan from API');
+    const workoutPlan = response.data;
+
+    // Fire-and-forget: Call the save endpoint without awaiting the result.
+    api.post('/fitnessPlan', { userId, planDetails: workoutPlan })
+      .then(() => console.log('Workout plan saved successfully.'))
+      .catch((saveError: any) => console.error('Error saving workout plan:', saveError));
+
     return response.data;
+
+
+    
   } catch (error: any) {
     // Log detailed error information
     console.error('Workout generation error:', error);

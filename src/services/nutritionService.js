@@ -37,9 +37,9 @@ exports.getMealsByUserId = async (userId) => {
  * @param {string} userId - User ID
  * @returns {Object} Meal data
  */
-exports.getMealById = async (mealId, userId) => {
+exports.getMealById = async (mealId) => {
   const meal = await Meal.findOne({
-    where: { id: mealId, UserId: userId }
+    where: { id: mealId}
   });
   
   if (!meal) {
@@ -56,9 +56,9 @@ exports.getMealById = async (mealId, userId) => {
  * @param {Object} mealData - Updated meal data
  * @returns {Object} Updated meal
  */
-exports.updateMeal = async (mealId, userId, mealData) => {
+exports.updateMeal = async (mealId, mealData) => {
   const meal = await Meal.findOne({
-    where: { id: mealId, UserId: userId }
+    where: { id: mealId}
   });
   
   if (!meal) {
@@ -75,9 +75,9 @@ exports.updateMeal = async (mealId, userId, mealData) => {
  * @param {string} userId - User ID
  * @returns {boolean} Success status
  */
-exports.deleteMeal = async (mealId, userId) => {
+exports.deleteMeal = async (mealId) => {
   const meal = await Meal.findOne({
-    where: { id: mealId, UserId: userId }
+    where: { id: mealId }
   });
   
   if (!meal) {

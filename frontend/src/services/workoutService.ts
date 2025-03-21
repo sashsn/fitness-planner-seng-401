@@ -1,6 +1,12 @@
 import api from './api';
 import { formatISO } from 'date-fns';
 
+// Helper function to retrieve the current user's ID from localStorage
+const getUserId = (): string => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  return user.id;
+};
+
 export interface Exercise {
   id?: string;
   name: string;
@@ -23,33 +29,33 @@ export interface Workout {
   workoutType: WorkoutType;
   date: string | Date;
   exercises: Exercise[];
-  duration?: number; // Make this optional
+  duration?: number;
   isCompleted: boolean;
   userId: string;
   intensity: string;
   notes?: string;
-  generatedPlan?: any; // Add this property to store AI-generated workout plan
-  caloriesBurned?: number; // Add caloriesBurned property
+  generatedPlan?: any;
+  caloriesBurned?: number;
 }
 
 /**
- * Get all workouts for the current user
- * @returns Promise with array of workouts
+ * Get all workouts for the current user.
+ * Now calls GET /workouts/user/:userId.
  */
 export const getUserWorkouts = async (): Promise<Workout[]> => {
   try {
-    const response = await api.get('/workouts');
+    const userId = getUserId();
+    const response = await api.get(`/workouts/user/${userId}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching workouts:', error);
-    throw error; // Rethrow instead of returning mock data
+    throw error;
   }
 };
 
 /**
- * Get a specific workout by ID
- * @param id Workout ID
- * @returns Promise with workout data
+ * Get a specific workout by ID.
+ * This remains unchanged.
  */
 export const getWorkoutById = async (id: string): Promise<Workout> => {
   const response = await api.get(`/workouts/${id}`);
@@ -57,9 +63,8 @@ export const getWorkoutById = async (id: string): Promise<Workout> => {
 };
 
 /**
- * Create a new workout
- * @param workoutData Workout data
- * @returns Promise with created workout
+ * Create a new workout.
+ * Now calls POST /workouts/user/:userId.
  */
 export const createWorkout = async (workoutData: Workout): Promise<Workout> => {
   const formattedData = {
@@ -69,15 +74,14 @@ export const createWorkout = async (workoutData: Workout): Promise<Workout> => {
       : workoutData.date
   };
   
-  const response = await api.post('/workouts', formattedData);
+  const userId = getUserId();
+  const response = await api.post(`/workouts/user/${userId}`, formattedData);
   return response.data;
 };
 
 /**
- * Update a workout
- * @param id Workout ID
- * @param workoutData Updated workout data
- * @returns Promise with updated workout
+ * Update a workout.
+ * Remains unchanged.
  */
 export const updateWorkout = async (id: string, workoutData: Workout): Promise<Workout> => {
   const formattedData = {
@@ -92,19 +96,16 @@ export const updateWorkout = async (id: string, workoutData: Workout): Promise<W
 };
 
 /**
- * Delete a workout
- * @param id Workout ID
- * @returns Promise
+ * Delete a workout.
+ * Remains unchanged.
  */
 export const deleteWorkout = async (id: string): Promise<void> => {
   await api.delete(`/workouts/${id}`);
 };
 
 /**
- * Add an exercise to a workout
- * @param workoutId Workout ID
- * @param exerciseData Exercise data
- * @returns Promise with created exercise
+ * Add an exercise to a workout.
+ * Remains unchanged.
  */
 export const addExerciseToWorkout = async (workoutId: string, exerciseData: Exercise): Promise<Exercise> => {
   const response = await api.post(`/workouts/${workoutId}/exercises`, exerciseData);

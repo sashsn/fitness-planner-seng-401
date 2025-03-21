@@ -22,6 +22,7 @@ const nutritionRoutes = require('./routes/nutritionRoutes');
 const goalRoutes = require('./routes/goalRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const fitnessPlanRoutes = require('./routes/fitnessPlanRoutes');
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use('/api/nutrition', nutritionRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/health-check', healthRoutes); // Fix the path here
 app.use('/api/ai', aiRoutes);
+app.use('/api/fitnessPlan', fitnessPlanRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

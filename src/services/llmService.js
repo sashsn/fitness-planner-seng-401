@@ -149,7 +149,9 @@ ${userProfile ? `
 - Gender: ${userProfile.gender || 'Unknown'}
 ` : ''}
 
-Generate a comprehensive workout plan in JSON format with the following structure:
+Generate a comprehensive workout plan in valid JSON format with the following structure,
+the values in this example should be updated with new values to matche the peronalized plan you will provide, right now they are descriptors of what to put and are not real valid values.
+Ensure the response is valid JSON by setting all attributes as strings, no numerical datatypes:
 {
   "workoutPlan": {
     "metadata": {
@@ -241,13 +243,13 @@ function parseWorkoutPlanResponse(response) {
       jsonString = jsonMatch[0];
       logger.debug(`Extracted JSON object with length: ${jsonString.length}`);
     }
-    
+
     // Preprocessing: Try to fix common JSON syntax errors
-    jsonString = cleanJsonString(jsonString);
-    
+    // jsonString = cleanJsonString(jsonString);
     // Parse the JSON
     const workoutPlan = JSON.parse(jsonString);
     
+
     // Validate the structure has required fields
     if (!workoutPlan.workoutPlan) {
       throw new Error('Missing workoutPlan field in response');
@@ -257,7 +259,7 @@ function parseWorkoutPlanResponse(response) {
     return workoutPlan;
   } catch (error) {
     logger.error(`Failed to parse LLM response: ${error.message}`);
-    logger.debug(`Response snippet: ${response.substring(0, 200)}...`);
+    // logger.debug(`Response snippet: ${response.substring(0, 200)}...`);
     
     if (error.message.includes('position')) {
       // Extract position from error message
@@ -289,9 +291,23 @@ function cleanJsonString(jsonString) {
     // Handle unquoted property names
     jsonString = jsonString.replace(/(\{|\,)\s*(\w+)\s*\:/g, '$1"$2":');
     
-    // Fix missing quotes around string values (more complex, attempt with caution)
-    // This is a simplified approach and might not catch all cases
-    jsonString = jsonString.replace(/:(\s*)([a-zA-Z][a-zA-Z0-9\s]*[a-zA-Z0-9])(\s*)(,|}|])/g, ':"$2"$3$4');
+    // Fix specific issue with "X minute" or "X minutes" values without quotes
+    jsonString = jsonString.replace(/"reps"\s*:\s*(\d+)\s+(minute|minutes|second|seconds|rep|reps)/g, '"reps": "$1 $2"');
+    jsonString = jsonString.replace(/"duration"\s*:\s*(\d+)\s+(minute|minutes|second|seconds)/g, '"duration": "$1 $2"');
+    jsonString = jsonString.replace(/"restBetweenSets"\s*:\s*(\d+)\s+(minute|minutes|second|seconds)/g, '"restBetweenSets": "$1 $2"');
+    
+    // More general case for unquoted strings - quotes values that contain alphabetic chars
+    jsonString = jsonString.replace(/:\s*(\d+\s+[a-zA-Z]+[a-zA-Z\s]*)([,\}])/g, ': "$1"$2');
+    
+    // Fix missing quotes around string values (more robust pattern)
+    const propertyPattern = /("[\w]+")\s*:\s*([^"{\[\d][^,{}\[\]]*?)(\s*[,}\]])/g;
+    while (propertyPattern.test(jsonString)) {
+      jsonString = jsonString.replace(propertyPattern, '$1: "$2"$3');
+    }
+    
+    // Extra handling for common units in exercise data
+    const unitsPattern = /:\s*(\d+)(\s*)(kg|lbs|lb|pounds|seconds|minutes|reps)([,\}])/g;
+    jsonString = jsonString.replace(unitsPattern, ': "$1$2$3"$4');
     
     return jsonString;
   } catch (error) {
@@ -317,7 +333,7 @@ function generateFallbackPlan() {
         createdAt: new Date().toISOString()
       },
       overview: {
-        description: "This is a basic workout plan generated when the detailed parsing failed.",
+        description: "This is a basic workout plan generated when the detailed generation failed. Please try again, thank you for your patience!",
         weeklyStructure: "3 days per week",
         recommendedEquipment: ["Minimal equipment needed"],
         estimatedTimePerSession: "30 minutes"

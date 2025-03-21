@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from '../../hooks/reduxHooks';
 import { clearErrors, login } from '../../features/auth/authSlice';
 import AlertMessage from '../../components/ui/AlertMessage';
 
+
 const Login: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.auth);
@@ -37,9 +38,76 @@ const Login: React.FC = () => {
 
   
   return (
-    <Box sx={{ width: '100%', maxWidth: 400, mx: 'auto' }}>
-      <Typography component="h1" variant="h5" align="center" gutterBottom>
-        Sign In
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: `
+        linear-gradient(
+          to left,
+          rgba(0, 0, 0, 0.7) 0%,
+          rgba(0, 0, 0, 0.5) 30%,
+          rgba(0, 0, 0, 0.3) 60%,
+          rgba(0, 0, 0, 0) 100%
+        ),
+        url('/401-login.png')
+      `,
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      
+      {/* Login form container */}
+      <Box
+        sx={{
+          background: "white",
+          backdropFilter: "blur(4px)",
+          pt: "120px", 
+          pb: 2,
+          px: 2,
+          width: "100%",
+          maxWidth: 400,
+          mx: "auto",
+          borderRadius: "8px",
+          position: "relative", 
+        }}
+      >
+        {/* Logo positioned inside the form */}
+        <Box
+          component="img"
+          src="/logo.png"
+          alt="Logo Text"
+          sx={{
+            position: "absolute",
+            top: "10px", // adjust this to control the vertical placement of the logo
+            left: "50%",
+            transform: "translateX(-50%)",
+            maxWidth: "90%",
+            height: "auto",
+            zIndex: 0,
+          }}
+        />
+        <Typography
+          component="h1"
+          variant="h5"
+          align="center"
+          gutterBottom
+          sx={{
+            display: "inline-block",  
+            px: 2,                 
+            borderRadius: "8px",
+            boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.3)",
+            background: "white",
+            position: "relative",
+            zIndex: 1, 
+            mt: "-30px",            
+            ml: "36%",              
+          }}
+        >
+          Sign In
       </Typography>
 
       {error && (
@@ -100,6 +168,8 @@ const Login: React.FC = () => {
           </Link>
         </Box>
       </form>
+    </Box>
+
     </Box>
   );
 };

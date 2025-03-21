@@ -6,9 +6,10 @@ const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const { AuthError } = require('../utils/errors');
 const logger = require('../utils/logger');
+const config = require('../config/server'); // Import server config
 
-// Get JWT secret from environment or use a default for development
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_not_for_production';
+// Get JWT secret from the same config used everywhere
+const JWT_SECRET = config.jwtSecret;
 
 /**
  * Authenticate requests using JWT
@@ -17,7 +18,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key_not_for_production'
  * @param {Function} next - Express next middleware function
  */
 exports.auth = async (req, res, next) => {
-  // Skip auth check in development mode if DEV_SKIP_AUTH=true
+  // Enable DEV_SKIP_AUTH in development mode to bypass auth
   if (process.env.NODE_ENV === 'development' && process.env.DEV_SKIP_AUTH === 'true') {
     logger.warn('⚠️ Authentication bypassed in development mode');
     req.user = { 
@@ -40,7 +41,8 @@ exports.auth = async (req, res, next) => {
       throw new AuthError('No token provided, authorization denied');
     }
 
-    // Verify token
+    // Verify token with the same JWT_SECRET used to create it
+    logger.debug(`Verifying token with secret prefix: ${JWT_SECRET.substring(0, 3)}...`);
     const decoded = jwt.verify(token, JWT_SECRET);
     
     // Find the user

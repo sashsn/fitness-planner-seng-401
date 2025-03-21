@@ -4,21 +4,23 @@
  */
 const logger = require('../utils/logger');
 const { ApiError } = require('../utils/errors');
+const nutritionService = require('../services/nutritionService');
 
 /**
  * Create a new meal entry
  */
-exports.createMeal = (req, res, next) => {
+exports.createMeal = async (req, res, next) => {
   try {
     logger.debug('Creating meal entry');
-    res.status(201).json({ 
-      success: true, 
-      message: 'Meal created successfully (mock)',
-      data: { 
-        id: 'mock-meal-id',
-        ...req.body, 
-        userId: req.user?.id || 'dev-user' 
-      } 
+    // Use req.user.id (or fallback to a dev user) and include it as UserId
+    const userId = req.params.userId;
+    const mealData = { ...req.body, UserId: userId };
+    const meal = await nutritionService.createMeal(mealData);
+
+    res.status(201).json({
+      success: true,
+      message: 'Meal created successfully',
+      data: meal
     });
   } catch (error) {
     next(error);
@@ -28,16 +30,15 @@ exports.createMeal = (req, res, next) => {
 /**
  * Get all meal entries for the logged-in user
  */
-exports.getUserMeals = (req, res, next) => {
+exports.getUserMeals = async (req, res, next) => {
   try {
     logger.debug('Getting user meals');
-    res.status(200).json({ 
-      success: true, 
-      data: [
-        { id: 'meal-1', name: 'Breakfast', calories: 500 },
-        { id: 'meal-2', name: 'Lunch', calories: 700 },
-        { id: 'meal-3', name: 'Dinner', calories: 600 }
-      ]
+    const userId = req.params.userId;
+    const meals = await nutritionService.getMealsByUserId(userId);
+
+    res.status(200).json({
+      success: true,
+      data: meals
     });
   } catch (error) {
     next(error);
@@ -47,13 +48,15 @@ exports.getUserMeals = (req, res, next) => {
 /**
  * Get a specific meal entry by ID
  */
-exports.getMealById = (req, res, next) => {
+exports.getMealById = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const  id  = req.params.id;
     logger.debug(`Getting meal by ID: ${id}`);
-    res.status(200).json({ 
-      success: true, 
-      data: { id, name: 'Sample Meal', calories: 500 } 
+
+    const meal = await nutritionService.getMealById(id);
+    res.status(200).json({
+      success: true,
+      data: meal
     });
   } catch (error) {
     next(error);
@@ -63,14 +66,15 @@ exports.getMealById = (req, res, next) => {
 /**
  * Update a meal entry
  */
-exports.updateMeal = (req, res, next) => {
+exports.updateMeal = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    logger.debug(`Updating meal with ID: ${id}`);
-    res.status(200).json({ 
-      success: true, 
+    const  id  = req.params.id;
+    
+    const updatedMeal = await nutritionService.updateMeal(id, req.body);
+    res.status(200).json({
+      success: true,
       message: 'Meal updated successfully',
-      data: { id, ...req.body } 
+      data: updatedMeal
     });
   } catch (error) {
     next(error);
@@ -80,13 +84,14 @@ exports.updateMeal = (req, res, next) => {
 /**
  * Delete a meal entry
  */
-exports.deleteMeal = (req, res, next) => {
+exports.deleteMeal = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    logger.debug(`Deleting meal with ID: ${id}`);
-    res.status(200).json({ 
-      success: true, 
-      message: 'Meal deleted successfully' 
+    const id = req.params.id;
+
+    await nutritionService.deleteMeal(id);
+    res.status(200).json({
+      success: true,
+      message: 'Meal deleted successfully'
     });
   } catch (error) {
     next(error);
@@ -96,19 +101,16 @@ exports.deleteMeal = (req, res, next) => {
 /**
  * Get nutrition summary for a specific date range
  */
-exports.getNutritionSummary = (req, res, next) => {
+exports.getNutritionSummary = async (req, res, next) => {
   try {
     const { from, to } = req.query;
+    const userId = req.params.userId;
     logger.debug(`Getting nutrition summary from ${from} to ${to}`);
-    res.status(200).json({ 
-      success: true, 
-      data: {
-        totalCalories: 1800,
-        averageCalories: 600,
-        totalProtein: 120,
-        totalCarbs: 200,
-        totalFat: 60
-      } 
+
+    const summary = await nutritionService.getNutritionSummary(userId, from, to);
+    res.status(200).json({
+      success: true,
+      data: summary
     });
   } catch (error) {
     next(error);

@@ -13,7 +13,9 @@ logger.info(`Using LLM API at ${serverConfig.llmApiUrl}`);
 
 // Start server
 const startServer = async () => {
+
   try {
+
     await connectDB();
     
     const server = app.listen(serverConfig.port, () => {

@@ -3,7 +3,6 @@
  * Defines API endpoints for AI-powered features like workout generation
  */
 const express = require('express');
-const { auth } = require('../middleware/auth');
 const aiController = require('../controllers/aiController');
 
 const router = express.Router();
@@ -18,10 +17,8 @@ router.get('/test', (req, res) => {
  * @description Generate a personalized workout plan using AI
  * @access Private or Public in development
  */
-// Only require auth in production
-const authMiddleware = process.env.NODE_ENV === 'production' ? [auth] : [];
 
-router.post('/workout', ...authMiddleware, aiController.generateWorkout);
+router.post('/workout',  aiController.generateWorkout);
 
 /**
  * @route GET /api/ai/health

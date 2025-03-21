@@ -62,8 +62,11 @@ module.exports = (sequelize, DataTypes) => {
     return await bcrypt.compare(enteredPassword, this.password);
   };
 
+
+  // Define Associations
   User.associate = (models) => {
-   
+    User.hasMany(models.Workout, { onDelete: 'CASCADE' });
+    User.hasMany(models.FitnessGoal, { onDelete: 'CASCADE' });
   };
 
   return User;

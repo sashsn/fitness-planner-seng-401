@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { Box, CssBaseline, Toolbar, AppBar, IconButton, Typography, Avatar, Menu, MenuItem } from '@mui/material';
+import { Box, CssBaseline, Toolbar, AppBar, IconButton, Typography, Avatar, Menu, MenuItem, useTheme, useMediaQuery } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useAppDispatch, useAppSelector } from '../hooks/reduxHooks';
 import ExpandableSidebar from '../components/layouts/ExpandableSidebar';
 import { logout } from '../features/auth/authSlice';
+import LogoutIcon from '@mui/icons-material/Logout';
+
 
 const MainLayout: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // CHANGED: Detect mobile view
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth);
@@ -23,9 +27,7 @@ const MainLayout: React.FC = () => {
   };
   
   const handleLogout = () => {
-    // Properly dispatch the logout action and navigate to login page
     dispatch(logout());
-    // Force navigation to login page
     navigate('/login', { replace: true });
   };
   
@@ -43,42 +45,45 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}> {/* CHANGED: For mobile, layout is column */}
       <CssBaseline />
       
-      {/* App Bar */}
       <AppBar
         position="fixed"
         sx={{
-          width: { sm: 'calc(100% - 68px)' },
-          ml: { sm: '68px' },
+          width: { sm: isMobile ? '100%' : 'calc(100% - 68px)' },
+          ml: { sm: isMobile ? 0 : '68px' },
           boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
           bgcolor: 'background.paper',
           color: 'text.primary',
         }}
       >
         <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2 }}
+            >
+              
+            </IconButton>
+          )}
+          <Box
+            component="img"
+            src="/logo-main.png"
+            alt="Logo Text"
+            sx={{
+              height: 40, // Adjust height to fit well within the AppBar
+              width: "auto", // Maintain aspect ratio
+              marginRight: 2, // Adds spacing between the logo and the text
+            }}
+          />
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, paddingLeft: 2, borderLeft: "2px solid rgba(0, 0, 0, 0.2)", }}>
             Fitness Planner
           </Typography>
-          
-          <IconButton color="inherit">
-            <NotificationsIcon />
-          </IconButton>
-          
-          <IconButton 
-            onClick={handleProfileMenuOpen}
-            sx={{ ml: 1 }}
-          >
+          <IconButton onClick={handleProfileMenuOpen} sx={{ ml: 1 }}>
             <Avatar 
               alt={username} 
               src={userAvatar} 
@@ -87,7 +92,6 @@ const MainLayout: React.FC = () => {
               {username.charAt(0).toUpperCase()}
             </Avatar>
           </IconButton>
-          
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
@@ -102,16 +106,24 @@ const MainLayout: React.FC = () => {
             }}
           >
             <MenuItem onClick={handleProfileClick}>Profile</MenuItem>
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            <MenuItem
+                onClick={handleLogout}
+                sx={{
+                  color: theme.palette.error.main,
+                }}
+              >
+                <LogoutIcon />
+                 Logout 
+              </MenuItem>
+            {/* <MenuItem color={theme.palette.error.main} onClick={handleLogout}>Logout</MenuItem> */}
           </Menu>
         </Toolbar>
       </AppBar>
       
-      {/* Sidebar */}
       <ExpandableSidebar 
         username={username}
         userAvatar={userAvatar}
-        onLogout={handleLogout} // Pass the properly implemented logout handler
+        onLogout={handleLogout}
       />
       
       {/* Main Content */}
@@ -120,8 +132,8 @@ const MainLayout: React.FC = () => {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { sm: 'calc(100% - 68px)' },
-          ml: { sm: '68px' },
+          mt: isMobile ? '56px' : 0, // CHANGED: Add top margin on mobile to account for horizontal menu height
+          ml: isMobile ? 0 : '68px',
         }}
       >
         <Toolbar />

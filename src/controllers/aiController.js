@@ -15,19 +15,19 @@ const llmService = require('../services/llmService');
 exports.generateWorkout = async (req, res, next) => {
   try {
     // Allow test calls without authentication in development
-    const userId = req.user ? req.user.id : 'test-user';
+    // const userId = req.user ? req.user.id : 'test-user';
     const preferences = req.body;
     
-    logger.info(`Generating workout plan for user ${userId}`);
-
+    
     if (!preferences) {
       throw new ApiError(400, 'Workout preferences are required');
     }
+    
+    logger.info(`Generating workout plan for user with preferences: `, preferences);
 
     // Add user information to the request for personalization
     const userPreferences = {
-      ...preferences,
-      userId
+      ...preferences
     };
 
     // Call LLM service to generate workout plan

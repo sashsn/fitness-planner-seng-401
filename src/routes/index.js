@@ -7,6 +7,7 @@ const userRoutes = require('./userRoutes');
 const { register } = require('../controllers/authController');
 const authController = require('../controllers/authController');
 
+
 // Root API route
 router.get('/', (req, res) => {
   res.status(200).json({ 
@@ -18,13 +19,15 @@ router.get('/', (req, res) => {
       workouts: '/api/workouts', 
       nutrition: '/api/nutrition',
       goals: '/api/goals',
-      ai: '/api/ai'
+      ai: '/api/ai', 
+      fitnessPlan: '/api/fitnessPlan',
     }
   });
 });
 
 // Mount user routes
 router.use('/users', userRoutes);
+
 
 // Handle the /debug/register route with improved error handling
 router.post('/debug/register', (req, res, next) => {

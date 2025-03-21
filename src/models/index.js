@@ -14,7 +14,8 @@ const sequelize = new Sequelize({
   host: env.DB_HOST || 'localhost',
   port: env.DB_PORT || 5432,
   username: 'postgres', // Hardcoded as requested
-  password: 'Sql000',     // Hardcoded as requested
+
+  password: 'O7frfuiq.',     // Hardcoded as requested - CHanged, match bens pq... otherwise should be 'root'
   database: 'fitness_planner', // Match exactly the database name from psql output
   logging: (msg) => logger.debug(msg),
   pool: {
@@ -26,7 +27,6 @@ const sequelize = new Sequelize({
 });
 
 const db = {};
-
 // Read all model files and import them
 fs.readdirSync(__dirname)
   .filter(file => {
@@ -44,6 +44,7 @@ fs.readdirSync(__dirname)
     }
   });
 
+  
 // Set up associations
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {
@@ -54,4 +55,6 @@ Object.keys(db).forEach(modelName => {
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
+console.log("Loaded models:", Object.keys(db));
 module.exports = db;
+

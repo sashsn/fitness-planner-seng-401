@@ -35,11 +35,11 @@ const Goals: React.FC = () => {
   }, [dispatch]);
 
   const handleAddGoal = () => {
-    navigate('/goals/create');
+    navigate('/goals/CreateGoal');
   };
 
   const handleEditGoal = (id: string) => {
-    navigate(`/goals/${id}/edit`);
+    navigate(`/goals/${id}/EditGoal`);
   };
 
   const handleDeleteGoal = (id: string) => {
@@ -77,22 +77,12 @@ const Goals: React.FC = () => {
         />
       )}
 
-      {goals.length === 0 ? (
-        <Card>
-          <CardContent>
-            <Box sx={{ py: 4, textAlign: 'center' }}>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No goals set yet
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Create your first fitness goal to start tracking your progress.
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      ) : (
+          
+    {Array.isArray(goals) && goals.length > 0 ? (
+        
         <Grid container spacing={3}>
           {goals.map((goal) => {
+            console.log("the goal: ", goal);
             const progress = goal.currentValue && goal.targetValue 
               ? (goal.currentValue / goal.targetValue * 100) 
               : 0;
@@ -156,25 +146,42 @@ const Goals: React.FC = () => {
                       </Grid>
                     </Grid>
                     
-                    <Box sx={{ mt: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2">Progress</Typography>
-                        <Typography variant="body2">
-                          {goal.currentValue} / {goal.targetValue} {goal.unit}
-                        </Typography>
+                    
+                    {!goal.isCompleted && (
+                      <Box sx={{ mt: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2">Progress</Typography>
+                          <Typography variant="body2">
+                            {goal.currentValue} / {goal.targetValue} {goal.unit}
+                          </Typography>
+                        </Box>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={Math.min(progress, 100)} 
+                          sx={{ mt: 1, height: 8, borderRadius: 1 }} 
+                        />
                       </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={Math.min(progress, 100)} 
-                        sx={{ mt: 1, height: 8, borderRadius: 1 }} 
-                      />
-                    </Box>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>
-            );
+            );   
           })}
         </Grid>
+
+        ) : (
+        <Card>
+          <CardContent>
+            <Box sx={{ py: 4, textAlign: "center" }}>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No goals set yet
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Create your first fitness goal to start tracking your progress.
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
       )}
 
       <ConfirmDialog

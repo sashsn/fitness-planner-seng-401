@@ -56,7 +56,7 @@ const CreateGoal: React.FC = () => {
       );
 
       if (addGoal.fulfilled.match(result)) {
-        navigate('/goals');
+        navigate('/goals/Goals');
       }
     },
   });
@@ -239,7 +239,7 @@ const CreateGoal: React.FC = () => {
               <Button
                 type="button"
                 variant="outlined"
-                onClick={() => navigate('/goals')}
+                onClick={() => navigate('/goals/Goals')}
                 sx={{ mr: 1 }}
                 disabled={loading}
               >
