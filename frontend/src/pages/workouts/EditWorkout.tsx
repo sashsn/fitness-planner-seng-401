@@ -61,18 +61,18 @@ const EditWorkout: React.FC = () => {
           editWorkout({
             id,
             workout: {
-              ...values,
-              ...currentWorkout,  // Preserve existing workout properties
+              ...currentWorkout,       // Spread existing data first
+              ...values,               // Then override with new values
               duration: values.duration ? Number(values.duration) : 0,
               caloriesBurned: values.caloriesBurned ? Number(values.caloriesBurned) : undefined,
-              // Make sure we keep the existing arrays and objects
+              // Preserve arrays and objects from currentWorkout if not updated
               exercises: currentWorkout?.exercises || [],
               userId: currentWorkout?.userId || 'current-user',
               intensity: currentWorkout?.intensity || 'medium'
             }
           })
         );
-
+    
         if (editWorkout.fulfilled.match(result)) {
           navigate(`/workouts/${id}`);
         }

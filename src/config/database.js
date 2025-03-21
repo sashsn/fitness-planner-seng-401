@@ -38,12 +38,12 @@ db.Sequelize = Sequelize;
 // Import models
 // Correct way to import and initialize models
 db.User = require('../models/User')(sequelize, Sequelize.DataTypes);
-
 db.Workout = require('../models/Workout')(sequelize);
 db.Exercise = require('../models/Exercise')(sequelize, Sequelize.DataTypes);
 db.FitnessGoal = require('../models/FitnessGoal')(sequelize);
 db.Meal = require('../models/Meal')(sequelize, Sequelize.DataTypes);
 db.Nutrition = require('../models/Nutrition')(sequelize);
+db.FitnessPlan = require('../models/FitnessPlan')(sequelize, Sequelize.DataTypes); // new model
 
 // Setup Associations
 Object.keys(db).forEach((modelName) => {

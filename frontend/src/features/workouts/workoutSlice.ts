@@ -28,73 +28,13 @@ const initialState: WorkoutState = {
 
 // Async thunks
 export const fetchWorkouts = createAsyncThunk(
-  'workouts/fetchAll',
+  'workouts/fetchWorkouts',
   async (_, { rejectWithValue }) => {
     try {
-      const data = await getUserWorkouts();
-      
-      // For development/debugging: If no workouts returned, add a mock AI Generated workout
-      if (process.env.NODE_ENV === 'development' && (!data || data.length === 0)) {
-        console.log('Adding mock AI Generated workout for testing');
-        
-        // Create a sample AI generated workout
-        const mockWorkout = {
-          id: 'mock-' + Date.now(),
-          name: 'Sample AI Workout',
-          description: 'This is a sample AI generated workout for testing',
-          workoutType: 'AI Generated' as WorkoutType,
-          date: new Date().toISOString(),
-          exercises: [],
-          duration: 45,
-          isCompleted: false,
-          userId: 'current-user',
-          intensity: 'medium',
-          notes: '',
-          generatedPlan: JSON.stringify({
-            workoutPlan: {
-              metadata: {
-                name: "Sample Workout Plan",
-                goal: "Weight Loss",
-                fitnessLevel: "Intermediate",
-                durationWeeks: 4,
-                createdAt: new Date().toISOString()
-              },
-              overview: {
-                description: "A sample workout plan for testing",
-                weeklyStructure: "3 days per week",
-                recommendedEquipment: ["Dumbbells", "Mat"],
-                estimatedTimePerSession: "45"
-              },
-              schedule: [
-                {
-                  week: 1,
-                  days: []
-                }
-              ],
-              nutrition: {
-                generalGuidelines: "Sample nutrition guidelines",
-                dailyProteinGoal: "1g per pound of body weight",
-                mealTimingRecommendation: "Every 3-4 hours"
-              },
-              progressionPlan: {
-                weeklyAdjustments: []
-              },
-              additionalNotes: "Sample additional notes"
-            }
-          })
-        };
-        
-        return [mockWorkout];
-      }
-      
-      return data;
+      const workouts = await getUserWorkouts();
+      return workouts;
     } catch (error: any) {
-      // Provide sample data when in development mode and there's a network error
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Using mock workout data due to API error');
-        return [];
-      }
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch workouts');
+      return rejectWithValue(error.message);
     }
   }
 );
@@ -145,6 +85,7 @@ export const editWorkout = createAsyncThunk(
   async ({ id, workout }: { id: string; workout: Workout }, { rejectWithValue }) => {
     try {
       const data = await updateWorkout(id, workout);
+      
       return data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update workout');

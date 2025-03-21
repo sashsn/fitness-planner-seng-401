@@ -51,6 +51,7 @@ interface ExpandableSidebarProps {
   onLogout: () => void;
 }
 
+
 // Renders a dropdown menu containing all sidebar items (except Dashboard).
 // For "Workouts", subItems are rendered as a  list.
 const MobileMenuDropdown: React.FC<{
@@ -222,12 +223,7 @@ const ExpandableSidebar: React.FC<ExpandableSidebarProps> = ({
           text: 'My Workouts',
           icon: <FormatListBulletedIcon />,
           path: '/workouts/Workouts',
-          badge: 3,
-        },
-        {
-          text: 'Create Workout',
-          icon: <AddIcon />,
-          path: '/workouts/CreateWorkout',
+          
         },
         {
           text: 'Generate Plan',

@@ -151,7 +151,7 @@ ${userProfile ? `
 
 Generate a comprehensive workout plan in valid JSON format with the following structure,
 the values in this example should be updated with new values to matche the peronalized plan you will provide, right now they are descriptors of what to put and are not real valid values.
-Ensure the response is valid JSON:
+Ensure the response is valid JSON by setting all attributes as strings, no numerical datatypes:
 {
   "workoutPlan": {
     "metadata": {
@@ -333,7 +333,7 @@ function generateFallbackPlan() {
         createdAt: new Date().toISOString()
       },
       overview: {
-        description: "This is a basic workout plan generated when the detailed parsing failed.",
+        description: "This is a basic workout plan generated when the detailed generation failed. Please try again, thank you for your patience!",
         weeklyStructure: "3 days per week",
         recommendedEquipment: ["Minimal equipment needed"],
         estimatedTimePerSession: "30 minutes"

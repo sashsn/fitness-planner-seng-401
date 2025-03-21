@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+// src/pages/workouts/WorkoutPlans.tsx
+import React, { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -10,163 +11,62 @@ import {
   CardHeader,
   Button,
   Paper,
-  FormControlLabel,
-  Switch,
+  IconButton,
   CircularProgress,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { useAppSelector, useAppDispatch } from '../../hooks/reduxHooks';
 import { formatDate } from '../../utils/format';
-import { fetchWorkouts } from '../../features/workouts/workoutSlice';
-import WorkoutPlanDebug from '../../components/debug/WorkoutPlanDebug';
-import WorkoutCard from '../../components/workouts/WorkoutCard';
+import { getFitnessPlans, removeFitnessPlan } from '../../features/fitnessPlans/fitnessPlanSlice';
 
 const WorkoutPlans: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { workouts, loading } = useAppSelector((state) => state.workouts);
-  const [showDebug, setShowDebug] = useState(process.env.NODE_ENV === 'development');
+  const { plans, loading, error } = useAppSelector((state) => state.fitnessPlans);
 
-  // CHANGED: Ensure workouts is treated as an array.
-  const workoutsArray = Array.isArray(workouts) ? workouts : [];
-
-  // Use memo to filter out AI-generated workouts
-  const generatedWorkouts = useMemo(() => {
-    return workoutsArray.filter((workout) => {
-      const isAIGenerated =
-        workout.workoutType === 'AI Generated' ||
-        (workout.workoutType &&
-          workout.workoutType.toLowerCase().includes('ai')) ||
-        (!!workout.generatedPlan &&
-          typeof workout.generatedPlan === 'string' &&
-          workout.generatedPlan.length > 10);
-      return isAIGenerated;
-    });
-  }, [workoutsArray]); // CHANGED: Depend on workoutsArray instead of workouts
-
-  // Fetch workouts when component mounts
   useEffect(() => {
-    dispatch(fetchWorkouts());
-    console.log("WorkoutPlans: Fetching workouts...");
+    dispatch(getFitnessPlans());
   }, [dispatch]);
 
-  // Debug logging in development mode
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('WorkoutPlans: Total workouts count:', workoutsArray.length);
-      const uniqueTypes = Array.from(
-        new Set(workoutsArray.map((w) => w.workoutType || 'undefined'))
-      );
-      console.log('WorkoutPlans: Workout types present:', uniqueTypes);
-      console.log('WorkoutPlans: AI Generated workouts found:', generatedWorkouts.length);
-      if (generatedWorkouts.length > 0) {
-        console.log('WorkoutPlans: Generated workouts details:');
-        generatedWorkouts.forEach((w, idx) => {
-          console.log(`  ${idx + 1}. ${w.name} (${w.id})`);
-          console.log(`     - Type: ${w.workoutType}`);
-          console.log(`     - Has plan data: ${!!w.generatedPlan}`);
-          if (w.generatedPlan) {
-            console.log(`     - Plan data type: ${typeof w.generatedPlan}`);
-            const size = typeof w.generatedPlan === 'string' ? w.generatedPlan.length : 'unknown';
-            console.log(`     - Plan data size: ${size} bytes`);
-          }
-        });
-      }
-    }
-  }, [workoutsArray, generatedWorkouts]);
-
   const handleViewPlan = useCallback((id: string) => {
-    navigate(`/workouts/${id}`);
+    navigate(`/workouts/PlanDetails/${id}`);
   }, [navigate]);
 
-  const handleEditPlan = useCallback((id: string) => {
-    navigate(`/workouts/${id}/EditWorkout`);
-  }, [navigate]);
+  const handleDeletePlan = useCallback((id: string) => {
+    if (window.confirm('Are you sure you want to delete this plan?')) {
+      dispatch(removeFitnessPlan(id));
+    }
+  }, [dispatch]);
 
   const handleNewPlan = useCallback(() => {
     navigate('/workouts/GenerateWorkout');
   }, [navigate]);
 
-  // Helper function to safely extract plan data (if needed)
-  const getPlanData = (workout: any) => {
-    try {
-      if (typeof workout.generatedPlan === 'string') {
-        return JSON.parse(workout.generatedPlan).workoutPlan;
-      } else if (workout.generatedPlan?.workoutPlan) {
-        return workout.generatedPlan.workoutPlan;
-      }
-    } catch (error) {
-      console.error('Error parsing workout plan:', error);
-    }
-    return null;
-  };
-
   return (
     <Container maxWidth="lg">
-      <Box mb={4}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            Your Workout Plans
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<FitnessCenterIcon />}
-            onClick={handleNewPlan}
-          >
-            Generate New Plan
-          </Button>
-        </Box>
-        <Typography variant="subtitle1" color="text.secondary" paragraph>
-          View and manage your AI-generated workout plans
+      <Box mb={4} display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h4" component="h1">
+          Your Workout Plans
         </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<FitnessCenterIcon />}
+          onClick={handleNewPlan}
+        >
+          Generate New Plan
+        </Button>
       </Box>
-
-      {process.env.NODE_ENV === 'development' && (
-        <Box sx={{ mb: 2 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showDebug}
-                onChange={(e) => setShowDebug(e.target.checked)}
-              />
-            }
-            label="Show Debug Info"
-          />
-        </Box>
-      )}
-
-      {showDebug && generatedWorkouts.length > 0 && (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Debug: Workout Plans Data
-          </Typography>
-          {generatedWorkouts.map((workout) => (
-            <WorkoutPlanDebug key={workout.id || 'unknown'} workoutData={workout} />
-          ))}
-        </Box>
-      )}
-
+      
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <Box display="flex" justifyContent="center" py={4}>
           <CircularProgress />
         </Box>
-      ) : generatedWorkouts.length > 0 ? (
-        <Grid container spacing={3}>
-          {generatedWorkouts.map((workout) => (
-            <Grid item xs={12} md={6} lg={4} key={workout.id || `workout-${Math.random()}`}>
-              <WorkoutCard
-                workout={workout}
-                onView={workout.id ? () => handleViewPlan(workout.id as string) : undefined}
-                onEdit={workout.id ? () => handleEditPlan(workout.id as string) : undefined}
-              />
-            </Grid>
-          ))}
-        </Grid>
-      ) : (
+      ) : error ? (
+        <Typography color="error">{error}</Typography>
+      ) : plans.length === 0 ? (
         <Paper sx={{ p: 3, textAlign: 'center' }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No workout plans found
@@ -181,6 +81,38 @@ const WorkoutPlans: React.FC = () => {
             Generate Your First Plan
           </Button>
         </Paper>
+      ) : (
+        <Grid container spacing={3}>
+          {plans.map((plan) => (
+            <Grid item xs={12} md={6} lg={4} key={plan.id}>
+              <Card>
+                <CardHeader
+                  title={plan.planDetails.workoutPlan.metadata.name || 'Workout Plan'}
+                  subheader={formatDate(plan.createdAt)}
+                  action={
+                    <IconButton onClick={() => handleDeletePlan(plan.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  }
+                />
+                <CardContent>
+                  <Typography variant="body2" color="text.secondary">
+                    {plan.planDetails.workoutPlan.overview.description}
+                  </Typography>
+                  <Box mt={2}>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => handleViewPlan(plan.id)}
+                    >
+                      View Plan
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       )}
     </Container>
   );

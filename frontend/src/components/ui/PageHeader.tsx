@@ -11,6 +11,13 @@ interface PageHeaderProps {
   subtitle?: string;
 }
 
+export interface PageHeaderAction {
+  label: string;
+  icon?: JSX.Element;
+  onClick: () => void;
+}
+
+
 const PageHeader: React.FC<PageHeaderProps> = ({ title, action, subtitle }) => {
   return (
     <Box sx={{ mb: 4 }}>

@@ -151,8 +151,23 @@ const Dashboard: React.FC = () => {
                       divider
                     >
                       <ListItemText 
-                        primary={workout.name} 
-                        secondary={`${formatDate(workout.date)} • ${workout.workoutType}`} 
+                        primary={
+                          <Box display="flex" alignItems="center">
+                            <Typography variant="body1">
+                              {workout.name || 'Unnamed Workout'}
+                            </Typography>
+                            {workout.isCompleted && (
+                              <Chip 
+                                label="Completed"
+                                color="success"
+                                size="small"
+                                icon={<CheckCircleIcon fontSize="small" />}
+                                sx={{ ml: 1 }}
+                              />
+                            )}
+                          </Box>
+                        }
+                        secondary={`${formatDate(workout.date)} • ${workout.workoutType || 'N/A'}`} 
                       />
                     </ListItem>
                   ))

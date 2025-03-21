@@ -19,7 +19,8 @@ router.get('/', (req, res) => {
       workouts: '/api/workouts', 
       nutrition: '/api/nutrition',
       goals: '/api/goals',
-      ai: '/api/ai'
+      ai: '/api/ai', 
+      fitnessPlan: '/api/fitnessPlan',
     }
   });
 });
