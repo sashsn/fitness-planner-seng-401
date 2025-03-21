@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import configureStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
 import GenerateWorkout from '../../pages/workouts/GenerateWorkout';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 // Create mock store
 const middlewares = [thunk];
@@ -57,7 +58,7 @@ describe('GenerateWorkout Component', () => {
 
   it('renders the component with form fields', () => {
     render(
-      <Provider store={store}>
+      <Provider store={store} children={undefined}>
         <GenerateWorkout />
       </Provider>
     );
@@ -74,7 +75,7 @@ describe('GenerateWorkout Component', () => {
 
   it('allows filling out the form and submits data', async () => {
     render(
-      <Provider store={store}>
+      <Provider store={store} children={undefined}>
         <GenerateWorkout />
       </Provider>
     );
@@ -112,7 +113,7 @@ describe('GenerateWorkout Component', () => {
     });
 
     render(
-      <Provider store={store}>
+      <Provider store={store} children={undefined}>
         <GenerateWorkout />
       </Provider>
     );
@@ -132,7 +133,7 @@ describe('GenerateWorkout Component', () => {
     });
 
     render(
-      <Provider store={store}>
+      <Provider store={store} children={undefined}>
         <GenerateWorkout />
       </Provider>
     );

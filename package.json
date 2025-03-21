@@ -5,7 +5,6 @@
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
-    "postinstall": "cd frontend && npm install && npm run build",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest",

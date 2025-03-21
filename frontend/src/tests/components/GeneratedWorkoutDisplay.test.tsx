@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import GeneratedWorkoutDisplay from '../../components/workouts/GeneratedWorkoutDisplay';
+import { describe, expect, it, jest } from '@jest/globals';
 
 // Mock workout plan data
 const mockWorkoutPlan = {
