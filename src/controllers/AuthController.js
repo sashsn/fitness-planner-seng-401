@@ -1,4 +1,4 @@
-const userService = require('../services/UserService');
+const userService = require('../services/userService');
 const User = require('../models').User;
 const { ApiError, logApiError } = require('../utils/errors');
 const jwt = require('jsonwebtoken');
