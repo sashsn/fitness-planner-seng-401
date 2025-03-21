@@ -6,88 +6,106 @@ const userService = require('../services/userService');
 const logger = require('../utils/logger');
 const { ApiError } = require('../utils/errors');
 
+
 /**
  * Register a new user
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- * @param {Function} next - Next middleware
  */
-exports.register = async (req, res, next) => {
+const register = async (req, res, next) => {
   try {
-    logger.info('Registration attempt received');
-    const userData = req.body;
-    
-    // Log if the request body is empty or potentially malformed
-    if (!userData || Object.keys(userData).length === 0) {
-      logger.error('Registration failed: Empty or malformed request body');
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid request data'
-      });
-    }
-    
-    const result = await userService.createUser(userData);
-    
-    logger.info('User registered successfully');
+    const userData = await userService.createUser(req.body);
+
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
-      data: result
+      user: userData.user,
+      token: userData.token
     });
   } catch (error) {
-    logger.error('Registration failed:', error.message);
+    logger.error(' Error in register:', error);
+    next(error);
+  }
+};
+
+
+/**
+ * Login User
+ */
+const login = async (req, res, next) => {
+  try {
+    console.log(`🔄 Login attempt for: ${req.body.email}`);
+
+    const userData = await userService.loginUser(req.body.email, req.body.password);
     
-    if (error instanceof ApiError) {
-      return res.status(error.statusCode).json({
-        success: false,
-        message: error.message,
-        errors: error.errors
-      });
-    }
-    
-    // Handle Sequelize unique constraint errors specifically
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      const field = error.errors[0]?.path || 'field';
-      return res.status(409).json({
-        success: false,
-        message: `${field} is already in use`,
-        errors: error.errors.map(e => ({ field: e.path, message: e.message }))
-      });
-    }
-    
+    res.status(200).json({
+      success: true,
+      user: userData.user,
+      token: userData.token
+    });
+  } catch (error) {
+    console.error(" Login error:", error);
+    res.status(error.statusCode || 500).json({ message: error.message || 'Login failed' });
+  }
+};
+
+/**
+ * Get user profile
+ */
+const getProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const user = await userService.getUserById(userId);
+    res.status(200).json(user);
+  } catch (error) {
     next(error);
   }
 };
 
 /**
- * Login user
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- * @param {Function} next - Next middleware
+ * Update user profile
  */
-exports.login = async (req, res, next) => {
+const updateProfile = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    const result = await userService.loginUser(email, password);
-    
-    // Set user ID in session
-    req.session.userId = result.user.id;
-    
-    logger.info(`User logged in: ${email}`);
-    
-    res.status(200).json(result);
+    const userId = req.user.id;
+    const userData = req.body;
+    const updatedUser = await userService.updateUser(userId, userData);
+    res.status(200).json(updatedUser);
   } catch (error) {
-    logger.error(`Login failed: ${error.message}`);
     next(error);
   }
 };
+
+/**
+ * Delete user account
+ */
+
+const deleteAccount = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update user with isActive set to false
+    user.isActive = false;
+    await user.save(); // Save the updated user instance
+    await user.reload(); 
+
+    res.clearCookie("token");
+    res.status(200).json({ message: "Account deactivated successfully" });
+
+  } catch (error) {
+    console.error(" Error in deleteAccount method:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 
 /**
  * Logout user
- * @param {Object} req - Request object
- * @param {Object} res - Response object
  */
-exports.logout = (req, res) => {
+const logout = (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       logger.error('Error destroying session:', err);
@@ -105,53 +123,11 @@ exports.logout = (req, res) => {
   });
 };
 
-/**
- * Get user profile
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- * @param {Function} next - Next middleware
- */
-exports.getProfile = async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-    const user = await userService.getUserById(userId);
-    res.status(200).json(user);
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Update user profile
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- * @param {Function} next - Next middleware
- */
-exports.updateProfile = async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-    const userData = req.body;
-    const updatedUser = await userService.updateUser(userId, userData);
-    
-    res.status(200).json(updatedUser);
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Delete user account
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- * @param {Function} next - Next middleware
- */
-exports.deleteAccount = async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-    await userService.deleteUser(userId);
-    
-    res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
+module.exports = {
+  register,
+  login,
+  getProfile,
+  updateProfile,
+  deleteAccount,
+  logout
 };

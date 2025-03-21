@@ -22,7 +22,9 @@ import CreateWorkout from './pages/workouts/CreateWorkout';
 import GenerateWorkout from './pages/workouts/GenerateWorkout';
 import WorkoutPlans from './pages/workouts/WorkoutPlans';
 import WorkoutDetail from './pages/workouts/WorkoutDetail';
+import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
+
 
 import Goals from './pages/goals/Goals';
 import EditGoal from './pages/goals/EditGoal';
@@ -73,6 +75,7 @@ const App: React.FC = () => {
           <Route path="workouts/CreateWorkout" element={<CreateWorkout />} />
           <Route path="workouts/GenerateWorkout" element={<GenerateWorkout />} />
           <Route path="workouts/:id" element={<WorkoutDetail />} />
+
           <Route path="workouts/WorkoutPlans" element={<WorkoutPlans />} />
           <Route path="workouts/EditWorkout/:id" element={<EditWorkout />} />
 

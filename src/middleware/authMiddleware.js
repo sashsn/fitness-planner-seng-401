@@ -2,56 +2,58 @@
  * Authentication middleware
  */
 const jwt = require('jsonwebtoken');
-const { ApiError } = require('../utils/errors');
 const { User } = require('../models');
 const logger = require('../utils/logger');
 
 /**
  * Middleware to protect routes
- * Verifies the JWT token and adds the user to the request object
  */
 const protect = async (req, res, next) => {
   try {
     let token;
 
-    // Check if token is in headers or cookies
+    // Prioritize Authorization Header
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      // Get token from header
       token = req.headers.authorization.split(' ')[1];
-    } else if (req.cookies && req.cookies.token) {
-      // Get token from cookie
-      token = req.cookies.token;
     }
 
-    // Check if token exists
+    // Ensure a token is provided
     if (!token) {
-      return next(new ApiError(401, 'Not authorized, no token provided'));
+      return res.status(401).json({ message: 'Not authorized, no token provided' });
     }
 
     try {
-      // Verify token
+      // Verify JWT
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+      
+      // Check if the token stores `id` instead of `userId`
+      const userId = decoded.userId || decoded.id; 
 
-      // Add user to request object
-      req.user = await User.findByPk(decoded.id, {
-        attributes: { exclude: ['password'] }
+      // Fetch user from the database
+      const user = await User.findByPk(userId, {
+        attributes: { exclude: ['password'] } // Hide password
       });
 
-      if (!req.user) {
-        return next(new ApiError(401, 'Not authorized, user not found'));
+      if (!user) {
+        return res.status(401).json({ message: 'Not authorized, user not found' });
       }
 
+      if (!user.isActive) {
+        return res.status(403).json({ message: 'Account is deactivated. Please contact support.' });
+      }
+
+      // Attach user to the request object
+      req.user = user;
+      
       next();
     } catch (error) {
       logger.error(`JWT verification error: ${error.message}`);
-      return next(new ApiError(401, 'Not authorized, token failed'));
+      return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   } catch (error) {
     logger.error(`Auth middleware error: ${error.message}`);
-    return next(new ApiError(500, 'Server error in authentication'));
+    return res.status(500).json({ message: 'Server error in authentication' });
   }
 };
 
-module.exports = {
-  protect
-};
+module.exports = { protect };

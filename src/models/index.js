@@ -14,6 +14,7 @@ const sequelize = new Sequelize({
   host: env.DB_HOST || 'localhost',
   port: env.DB_PORT || 5432,
   username: 'postgres', // Hardcoded as requested
+
   password: 'O7frfuiq.',     // Hardcoded as requested - CHanged, match bens pq... otherwise should be 'root'
   database: 'fitness_planner', // Match exactly the database name from psql output
   logging: (msg) => logger.debug(msg),
