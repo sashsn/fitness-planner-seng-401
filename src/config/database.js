@@ -8,11 +8,11 @@ const logger = require('../utils/logger');
 
 // Get database configuration from environment
 const {
-  DB_HOST = 'localhost',
+  DB_HOST = 'postgresql://fitness_planner_user:IsT5aUjh1kJd4HM9IXgxNf01A0CXayZA@dpg-cvefprd2ng1s73cftkug-a/fitness_planner',
   DB_PORT = 5432,
   DB_NAME = 'fitness_planner',
-  DB_USER = 'postgres',
-  DB_PASSWORD = 'O7frfuiq.',
+  DB_USER = 'fitness_planner_user',
+  DB_PASSWORD = 'IsT5aUjh1kJd4HM9IXgxNf01A0CXayZA',
   DB_DIALECT = 'postgres'
 } = process.env;
 
