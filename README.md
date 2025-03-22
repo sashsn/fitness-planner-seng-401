@@ -255,7 +255,7 @@ Contributions are welcome! Please follow these steps to contribute:
 - **Chowdhury, Wahid**
 - **Leggett, Benjamin**
 - **Morshed, M Munem**
-- 
+- **Paul, Himel**
 - **Snigdho, Sadman Shahriar**
 
 ## License
