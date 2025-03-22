@@ -252,7 +252,7 @@ Contributions are welcome! Please follow these steps to contribute:
 
 ## Authors
 
-- 
+- **Chowdhury, Wahid**
 - **Leggett, Benjamin**
 - **Morshed, M Munem**
 - 
