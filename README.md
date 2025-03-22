@@ -96,13 +96,13 @@ Fitness Planner is a comprehensive application designed to help users track thei
 
 1. Start the backend server:
    ```bash
-   npm run dev
+   npm start
    ```
 
 2. Start the frontend development server:
    ```bash
    cd frontend
-   npm start
+   npm run dev
    ```
 
 3. Open [http://localhost:3000](http://localhost:3000) to view the application in the browser.
