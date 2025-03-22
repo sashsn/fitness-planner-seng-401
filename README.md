@@ -77,6 +77,7 @@ Fitness Planner is a comprehensive application designed to help users track thei
      DB_PASSWORD=your_database_password
      DB_NAME=fitness_planner
      CORS_ORIGIN=http://localhost:3000
+     OPENAI_API_KEY=your_openai_api_key
      ```
 
    - Create a `.env` file in the `frontend` directory with the following contents:
@@ -102,10 +103,15 @@ Fitness Planner is a comprehensive application designed to help users track thei
 2. Start the frontend development server:
    ```bash
    cd frontend
-   npm run dev
+   npm start
    ```
 
-3. Open [http://localhost:3000](http://localhost:3000) to view the application in the browser.
+3. Or run both backend and frontend concurrently:
+   ```bash
+   npm run dev:all
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) to view the application in the browser.
 
 ### Building for Production
 
@@ -122,122 +128,89 @@ This will create optimized files in the `build` folder.
 ```
 fitness-planner/
 ├── .gitignore
-├── API.md
-├── gitpush.sh
+├── API.md                           # API documentation
 ├── package.json
-├── Project Proposal SENG401 - Group 12.pdf
 ├── docs/
-│   ├── ai-setup.md
-│   └── llm-setup.md
+│   ├── ai-setup.md                  # OpenAI API setup guide
+│   └── llm-setup.md                 # LMStudio setup guide
 ├── frontend/
-│   ├── .gitignore
 │   ├── package.json
 │   ├── README.md
 │   ├── tsconfig.json
 │   ├── public/
-│   │   ├── 401-login.png
 │   │   ├── index.html
-│   │   ├── logo-main.png
-│   │   ├── Logo.png
 │   │   └── manifest.json
 │   └── src/
-│       ├── App.tsx
-│       ├── index.tsx
-│       ├── reportWebVitals.ts
-│       ├── components/
-│       ├── features/
-│       ├── hooks/
-│       ├── layouts/
-│       ├── pages/
-│       ├── services/
-│       ├── store.ts
-│       ├── theme.ts
-│       └── utils/
+│       ├── App.tsx                  # Main app component
+│       ├── index.tsx                # Entry point
+│       ├── components/              # Reusable components
+│       │   ├── ui/                  # UI components
+│       │   └── workouts/            # Workout-related components
+│       ├── features/                # Redux Toolkit slices
+│       │   ├── auth/                # Authentication slice
+│       │   ├── workouts/            # Workouts slice
+│       │   ├── nutrition/           # Nutrition slice
+│       │   ├── goals/               # Goals slice
+│       │   └── workoutGenerator/    # AI workout generator
+│       ├── hooks/                   # Custom React hooks
+│       ├── layouts/                 # Layout components
+│       ├── pages/                   # Page components
+│       │   ├── auth/                # Authentication pages
+│       │   ├── workouts/            # Workout pages
+│       │   ├── nutrition/           # Nutrition pages
+│       │   └── goals/               # Goals pages
+│       ├── services/                # API services
+│       ├── store.ts                 # Redux store configuration
+│       ├── theme.ts                 # Material-UI theme configuration
+│       └── utils/                   # Utility functions
 ├── logs/
 │   ├── combined.log
 │   └── error.log
 ├── src/
-│   ├── app.js
-│   ├── server.js
-│   ├── components/
-│   │   ├── PlanItem.js
-│   │   └── PlanCard.jsx
-│   ├── config/
-│   │   ├── database.js
-│   │   ├── env.js
-│   │   └── server.js
-│   ├── controllers/
-│   │   ├── AuthController.js
-│   │   ├── aiController.js
-│   │   ├── goalController.js
-│   │   ├── healthController.js
-│   │   ├── nutritionController.js
-│   │   ├── userController.js
-│   │   └── workoutController.js
-│   ├── db/
-│   │   ├── init.js
-│   │   ├── migrations/
-│   │   │   ├── 001-initial-schema.js
-│   │   │   ├── 20240315_add_generatedPlan_to_workouts.js
-│   │   └── seeders/
-│   │       ├── 001-demo-users.js
-│   │       └── 002-sample-workouts.js
-│   ├── middleware/
-│   │   ├── auth.js
-│   │   ├── authMiddleware.js
-│   │   ├── errorHandler.js
-│   │   ├── errorMiddleware.js
-│   │   ├── notFound.js
-│   │   ├── validation.js
-│   │   └── validators.js
-│   ├── migrations/
-│   │   ├── add-deleted-at-column.js
-│   ├── models/
-│   │   ├── Exercise.js
-│   │   ├── FitnessGoal.js
-│   │   ├── Nutrition.js
-│   │   ├── User.js
-│   │   ├── Workout.js
-│   │   └── index.js
-│   ├── pages/
-│   │   └── ViewPlansPage.jsx
-│   ├── routes/
-│   │   ├── aiRoutes.js
-│   │   ├── authRoutes.js
-│   │   ├── debugRoutes.js
-│   │   ├── goalRoutes.js
-│   │   ├── healthRoutes.js
-│   │   ├── index.js
-│   │   ├── nutritionRoutes.js
-│   │   ├── userRoutes.js
-│   │   └── workoutRoutes.js
-│   ├── scripts/
-│   │   ├── check-structure.js
-│   │   ├── db-setup.js
-│   │   ├── run-migrations.js
-│   │   ├── test-api-endpoints.js
-│   │   └── test-workout-generation.js
-│   ├── services/
-│   │   ├── goalService.js
-│   │   ├── llmService.js
-│   │   ├── nutritionService.js
-│   │   ├── userService.js
-│   │   └── workoutService.js
-│   ├── tests/
-│   │   ├── setup.js
-│   │   └── unit/
-│   │       └── services/
-│   │           └── userService.test.js
-│   └── utils/
-│       ├── errors.js
-│       ├── logger.js
-│       └── seedDB.js
-└── README.md
+│   ├── app.js                       # Express app setup
+│   ├── server.js                    # Server entry point
+│   ├── config/                      # Configuration files
+│   ├── controllers/                 # Request handlers
+│   ├── db/                          # Database-related files
+│   │   ├── migrations/              # Database migrations
+│   │   └── seeders/                 # Database seed data
+│   ├── middleware/                  # Express middleware
+│   ├── models/                      # Sequelize models
+│   ├── routes/                      # API routes
+│   ├── scripts/                     # Utility scripts
+│   ├── services/                    # Business logic
+│   ├── tests/                       # Test files
+│   └── utils/                       # Utility functions
+└── README.md                        # This file
 ```
 
 ## API Documentation
 
 For detailed API documentation, refer to the [API.md](API.md) file.
+
+## Testing
+
+Run tests using Jest:
+```bash
+npm test
+```
+
+For frontend testing:
+```bash
+cd frontend
+npm test
+```
+
+## AI-Powered Features
+
+This application leverages the OpenAI API to generate personalized workout plans. To use this feature:
+
+1. Make sure you have an OpenAI API key in your `.env` file.
+2. Navigate to the workout generator page.
+3. Fill in your preferences (fitness goals, experience level, available equipment, etc.).
+4. The application will generate a customized workout plan tailored to your needs.
+
+For setup instructions, see [ai-setup.md](docs/ai-setup.md).
 
 ## Contributing
 
@@ -257,6 +230,5 @@ Contributions are welcome! Please follow these steps to contribute:
 - **Morshed, M Munem**
 - **Paul, Himel**
 - **Snigdho, Sadman Shahriar**
-
 
 
