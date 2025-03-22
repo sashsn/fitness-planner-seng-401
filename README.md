@@ -258,8 +258,5 @@ Contributions are welcome! Please follow these steps to contribute:
 - **Paul, Himel**
 - **Snigdho, Sadman Shahriar**
 
-## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-Thank you for using Fitness Planner! We hope it helps you achieve your fitness goals.
